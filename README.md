@@ -36,7 +36,7 @@ The builds are not signed yet, so each system asks once before opening the app.
 
 - **Windows:** if SmartScreen appears, choose **More info**, then **Run anyway**. mpckit uses the Microsoft WebView2 runtime, which comes with Windows 11 and current Windows 10.
 - **macOS:** unzip and move `mpckit.app` to Applications. Open it once; when macOS blocks it, go to **System Settings → Privacy & Security** and choose **Open Anyway**.
-- **Linux:** extract and run `./mpckit`. It needs GTK 3 and WebKitGTK 4.1 (on Debian and Ubuntu: `sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0`).
+- **Linux:** extract and run `./mpckit`. It needs GTK 4 and WebKitGTK 6.0 (on Debian and Ubuntu: `sudo apt install libgtk-4-1 libwebkitgtk-6.0-4`).
 
 ## Getting a project onto the device
 
@@ -54,7 +54,7 @@ Copy both, together, to the device's storage and load `MyKit` on the MPC Sample.
 You need Go (the version in `src/go.mod`), Node.js 22 or newer, and the Wails v3 CLI at the version in `src/go.mod`. On Linux you also need the GTK and WebKitGTK development packages; `wails3 doctor` lists what is missing.
 
 ```sh
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0   # match src/go.mod
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0   # match src/go.mod
 cd src
 wails3 dev          # run with live reload
 wails3 build        # build for this system into src/bin/
