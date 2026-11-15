@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in mpckit doesn't work, or a project it wrote won't load or play on the device.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: mpckit version
+      description: Shown in the About window.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Computer
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: MPC Sample firmware version
+      description: Only if the problem shows up on the device.
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: Steps to reproduce, as exact as you can.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: >
+        If a project is involved, attach the .xpj (zipped) if you can.
+        Only attach samples you have the right to share.

@@ -1,0 +1,6 @@
+# OS and editor files. App build output is ignored in src/.gitignore.
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
