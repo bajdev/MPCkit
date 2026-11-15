@@ -22,7 +22,7 @@ import * as $models from "./models.js";
  * About returns the About dialog text.
  */
 export function About(): $CancellablePromise<$models.About> {
-    return $Call.ByID(790948986);
+    return $Call.ByID(4012375973);
 }
 
 /**
@@ -30,7 +30,7 @@ export function About(): $CancellablePromise<$models.About> {
  * the BPM of the most recently edited sequence (else 120).
  */
 export function AddSequence(slot: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(1757757973, slot);
+    return $Call.ByID(2663858690, slot);
 }
 
 /**
@@ -38,7 +38,7 @@ export function AddSequence(slot: number): $CancellablePromise<$models.State> {
  * Cancelling the dialog changes nothing.
  */
 export function AssignSampleDialog(slot: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(254710842, slot);
+    return $Call.ByID(2984096775, slot);
 }
 
 /**
@@ -47,7 +47,7 @@ export function AssignSampleDialog(slot: number): $CancellablePromise<$models.St
  * ExportFolder(true) or ExportZip(true) cannot overwrite it without asking.
  */
 export function CancelExport(): $CancellablePromise<void> {
-    return $Call.ByID(1632066973);
+    return $Call.ByID(3138786632);
 }
 
 /**
@@ -55,7 +55,7 @@ export function CancelExport(): $CancellablePromise<void> {
  * for ExportFolder. It returns the folder, or "" if cancelled.
  */
 export function ChooseExportFolder(): $CancellablePromise<string> {
-    return $Call.ByID(3758813274);
+    return $Call.ByID(1685119179);
 }
 
 /**
@@ -63,14 +63,14 @@ export function ChooseExportFolder(): $CancellablePromise<string> {
  * It returns the path, or "" if cancelled.
  */
 export function ChooseZipPath(): $CancellablePromise<string> {
-    return $Call.ByID(2500682668);
+    return $Call.ByID(1381599255);
 }
 
 /**
  * ClearPad empties the pad in slot.
  */
 export function ClearPad(slot: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(3159325479, slot);
+    return $Call.ByID(706067730, slot);
 }
 
 /**
@@ -78,14 +78,14 @@ export function ClearPad(slot: number): $CancellablePromise<$models.State> {
  * frontend calls it after the user chose to discard them.
  */
 export function CloseWindow(): $CancellablePromise<void> {
-    return $Call.ByID(2314271135);
+    return $Call.ByID(4079652072);
 }
 
 /**
  * CopyPad copies the pad in from to slot to, replacing what was there.
  */
 export function CopyPad($from: number, to: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(481175501, $from, to);
+    return $Call.ByID(231274946, $from, to);
 }
 
 /**
@@ -94,7 +94,7 @@ export function CopyPad($from: number, to: number): $CancellablePromise<$models.
  * is written and Exists lists it.
  */
 export function ExportFolder(overwrite: boolean): $CancellablePromise<$models.ExportResult> {
-    return $Call.ByID(230458675, overwrite);
+    return $Call.ByID(294881350, overwrite);
 }
 
 /**
@@ -102,7 +102,7 @@ export function ExportFolder(overwrite: boolean): $CancellablePromise<$models.Ex
  * file exists and overwrite is false, nothing is written and Exists lists it.
  */
 export function ExportZip(overwrite: boolean): $CancellablePromise<$models.ExportResult> {
-    return $Call.ByID(3485442350, overwrite);
+    return $Call.ByID(131125221, overwrite);
 }
 
 /**
@@ -110,7 +110,7 @@ export function ExportZip(overwrite: boolean): $CancellablePromise<$models.Expor
  * The frontend asks about unsaved changes first.
  */
 export function Load(): $CancellablePromise<$models.LoadResult> {
-    return $Call.ByID(3449372205);
+    return $Call.ByID(2944029836);
 }
 
 /**
@@ -118,14 +118,14 @@ export function Load(): $CancellablePromise<$models.LoadResult> {
  * Recorded notes stay on their slots; the frontend warns first.
  */
 export function MovePad($from: number, to: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(2364397301, $from, to);
+    return $Call.ByID(1334313874, $from, to);
 }
 
 /**
  * New replaces the current project with a new, empty one.
  */
 export function New(): $CancellablePromise<$models.State> {
-    return $Call.ByID(869901757);
+    return $Call.ByID(1081706734);
 }
 
 /**
@@ -133,21 +133,21 @@ export function New(): $CancellablePromise<$models.State> {
  * sequence cannot be removed.
  */
 export function RemoveSequence(slot: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(3423255788, slot);
+    return $Call.ByID(1152874213, slot);
 }
 
 /**
  * SetMuteGroup sets a pad's mute group; 0 is off.
  */
 export function SetMuteGroup(slot: number, group: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(2111298513, slot, group);
+    return $Call.ByID(3670781472, slot, group);
 }
 
 /**
  * SetName renames the project.
  */
 export function SetName(name: string): $CancellablePromise<$models.State> {
-    return $Call.ByID(1595495796, name);
+    return $Call.ByID(3204913251, name);
 }
 
 /**
@@ -155,26 +155,26 @@ export function SetName(name: string): $CancellablePromise<$models.State> {
  * new, shorter end are left in the file.
  */
 export function SetSequence(slot: number, name: string, bpm: number, bars: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(3880070126, slot, name, bpm, bars);
+    return $Call.ByID(1460841117, slot, name, bpm, bars);
 }
 
 /**
  * SetTune sets a pad's tuning in semitones and cents.
  */
 export function SetTune(slot: number, coarse: number, fine: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(2579740609, slot, coarse, fine);
+    return $Call.ByID(35072270, slot, coarse, fine);
 }
 
 /**
  * State returns the current project's state.
  */
 export function State(): $CancellablePromise<$models.State> {
-    return $Call.ByID(2566861378);
+    return $Call.ByID(1437425701);
 }
 
 /**
  * SwapPads exchanges two pads.
  */
 export function SwapPads(a: number, b: number): $CancellablePromise<$models.State> {
-    return $Call.ByID(1931051472, a, b);
+    return $Call.ByID(4250369653, a, b);
 }

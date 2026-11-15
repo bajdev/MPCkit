@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.monoexp.com/bajdev/mpckit/internal/project"
+	"github.com/bajdev/MPCkit/internal/project"
 )
 
 const testdata = "../../testdata"

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.monoexp.com/bajdev/mpckit/internal/xpj"
+	"github.com/bajdev/MPCkit/internal/xpj"
 )
 
 // loadChanged reads the device's DemoFile, applies change to its data, writes

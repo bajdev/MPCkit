@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"git.monoexp.com/bajdev/mpckit/internal/project"
-	"git.monoexp.com/bajdev/mpckit/internal/wav"
+	"github.com/bajdev/MPCkit/internal/project"
+	"github.com/bajdev/MPCkit/internal/wav"
 )
 
 // AudioPrefix is the URL path the preview loads samples from:

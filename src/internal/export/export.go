@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"git.monoexp.com/bajdev/mpckit/internal/project"
+	"github.com/bajdev/MPCkit/internal/project"
 )
 
 // ExistsError is returned when the destination already holds the project

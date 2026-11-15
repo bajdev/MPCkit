@@ -12,13 +12,13 @@ import (
 	"strings"
 	"sync"
 
-	"git.monoexp.com/bajdev/mpckit/internal/export"
-	"git.monoexp.com/bajdev/mpckit/internal/project"
+	"github.com/bajdev/MPCkit/internal/export"
+	"github.com/bajdev/MPCkit/internal/project"
 )
 
 // Version and Commit are set by production builds (Taskfile.yml) with
-// -ldflags "-X git.monoexp.com/bajdev/mpckit/internal/app.Version=0.5.5
-// -X git.monoexp.com/bajdev/mpckit/internal/app.Commit=2354f57".
+// -ldflags "-X github.com/bajdev/MPCkit/internal/app.Version=0.5.5
+// -X github.com/bajdev/MPCkit/internal/app.Commit=2354f57".
 var (
 	Version = "dev"
 	Commit  = ""
@@ -213,7 +213,7 @@ func (s *Service) About() About {
 		Version: Version,
 		Commit:  Commit,
 		License: "MIT License, copyright (c) 2026 bajdev",
-		Repo:    "https://git.monoexp.com/bajdev/mpckit",
+		Repo:    "https://github.com/bajdev/MPCkit",
 	}
 }
 

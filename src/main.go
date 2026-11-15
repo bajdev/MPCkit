@@ -12,7 +12,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"git.monoexp.com/bajdev/mpckit/internal/app"
+	"github.com/bajdev/MPCkit/internal/app"
 )
 
 // The built Svelte app (frontend/dist), embedded in the binary.

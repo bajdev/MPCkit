@@ -13,7 +13,7 @@ import (
 	"strings"
 	"unicode"
 
-	"git.monoexp.com/bajdev/mpckit/internal/xpj"
+	"github.com/bajdev/MPCkit/internal/xpj"
 )
 
 //go:embed template/DemoBlank.xpj

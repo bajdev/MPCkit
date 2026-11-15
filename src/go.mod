@@ -1,4 +1,4 @@
-module git.monoexp.com/bajdev/mpckit
+module github.com/bajdev/MPCkit
 
 go 1.26.0
 

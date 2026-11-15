@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.monoexp.com/bajdev/mpckit/internal/xpj"
+	"github.com/bajdev/MPCkit/internal/xpj"
 )
 
 const testdata = "../../testdata"

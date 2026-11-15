@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"git.monoexp.com/bajdev/mpckit/internal/xpj"
+	"github.com/bajdev/MPCkit/internal/xpj"
 )
 
 // Event types in a clip's event list.

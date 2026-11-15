@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
-	"git.monoexp.com/bajdev/mpckit/internal/export"
-	"git.monoexp.com/bajdev/mpckit/internal/project"
+	"github.com/bajdev/MPCkit/internal/export"
+	"github.com/bajdev/MPCkit/internal/project"
 )
 
 // opFunc is one change to the project, made from a flag's value.

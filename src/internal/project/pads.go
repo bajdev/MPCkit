@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode"
 
-	"git.monoexp.com/bajdev/mpckit/internal/wav"
-	"git.monoexp.com/bajdev/mpckit/internal/xpj"
+	"github.com/bajdev/MPCkit/internal/wav"
+	"github.com/bajdev/MPCkit/internal/xpj"
 )
 
 // Values the device writes when it assigns a sample with no tempo or key of
