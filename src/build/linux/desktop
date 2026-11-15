@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=mpckit
+Comment=Desktop kit editor for the MPC Sample
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/mpckit %u
+Terminal=false
+Type=Application
+Icon=mpckit
+Categories=Utility;
+StartupWMClass=mpckit
+
+ 

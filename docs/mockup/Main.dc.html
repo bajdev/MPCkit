@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MPCkit main screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15171A}
+*{box-sizing:border-box}
+a{color:#F5A524}a:hover{color:#FFC35A}
+</style>
+</helmet>
+<div style="max-width: 1280px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; background: #15171A; color: #F2F3F5; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.4">
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid #353A43">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: 0.02em">MPCkit</h1>
+<button type="button" onClick="{{openAbout}}" style="min-height: 44px; padding: 0 8px; background: transparent; color: {{accent}}; border: 0; font: inherit; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; cursor: pointer">About</button>
+</div>
+
+<header style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 240px; min-width: 0; max-width: 360px">
+<label for="project-name" style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Project name</label>
+<input id="project-name" type="text" value="{{name}}" onChange="{{setName}}" style="height: 44px; padding: 0 12px; background: #1E2126; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 600; width: 100%">
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto">
+<button type="button" style="height: 44px; padding: 0 16px; background: #1E2126; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">New</button>
+<button type="button" style="height: 44px; padding: 0 16px; background: #1E2126; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Load</button>
+<button type="button" style="height: 44px; padding: 0 16px; background: #1E2126; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Export zip</button>
+<button type="button" style="height: 44px; padding: 0 16px; background: {{accent}}; color: #15171A; border: 1px solid {{accent}}; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer">Export to folder</button>
+</div>
+</header>
+
+<div role="tablist" aria-label="Views" style="display: flex; gap: 4px; border-bottom: 1px solid #353A43">
+<button type="button" role="tab" aria-selected="{{padsTab.selected}}" onClick="{{padsTab.pick}}" style="height: 48px; padding: 0 22px; background: transparent; color: {{padsTab.fg}}; border: 0; border-bottom: 3px solid {{padsTab.line}}; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer">Pads</button>
+<button type="button" role="tab" aria-selected="{{seqsTab.selected}}" onClick="{{seqsTab.pick}}" style="height: 48px; padding: 0 22px; background: transparent; color: {{seqsTab.fg}}; border: 0; border-bottom: 3px solid {{seqsTab.line}}; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer">Sequences</button>
+</div>
+
+<sc-if value="{{showPads}}" hint-placeholder-val="{{ true }}">
+<main style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-label="Pads" style="flex: 1.4 1 380px; min-width: 0; background: #1E2126; border: 1px solid #353A43; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Pad bank</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A9AEB8">{{bankSummary}}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{banks}}" as="b" hint-placeholder-count="8">
+<button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" aria-label="{{b.aria}}" style="height: 44px; padding: 0; background: {{b.bg}}; color: {{b.fg}}; border: 1px solid {{b.border}}; border-radius: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer">{{b.label}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{cells}}" as="pad" hint-placeholder-count="16">
+<button type="button" onClick="{{pad.pick}}" aria-pressed="{{pad.pressed}}" aria-label="{{pad.aria}}" style="aspect-ratio: 1 / 1; min-height: 72px; padding: 8px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 4px; text-align: left; background: {{pad.bg}}; color: #F2F3F5; border: 2px solid {{pad.border}}; border-radius: 8px; font: inherit; cursor: pointer; overflow: hidden">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: {{pad.numColor}}">{{pad.label}}</span>
+<span style="font-size: 12px; font-weight: 600; line-height: 1.25; overflow: hidden; max-width: 100%; overflow-wrap: anywhere">{{pad.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #C9CDD4; min-height: 15px">{{pad.badges}}</span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 12px; color: #A9AEB8">Click a pad to select and hear it. Drag a pad to move it, drag onto a filled pad to swap, hold Alt while dragging to copy. Drop a WAV file on any pad to assign it.</p>
+</section>
+
+<section aria-label="Pad settings" style="flex: 1 1 320px; min-width: 0; background: #1E2126; border: 1px solid #353A43; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: {{accent}}">{{sel.id}}</div>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Pad settings</h2>
+<div style="font-weight: 600; overflow-wrap: anywhere">{{sel.file}}</div>
+</div>
+</div>
+
+<sc-if value="{{sel.empty}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border: 1px dashed #4A505B; border-radius: 8px">
+<p style="margin: 0; color: #C9CDD4">This pad is empty. Drop a WAV file on it, or choose one.</p>
+<button type="button" style="height: 44px; padding: 0 16px; align-self: flex-start; background: {{accent}}; color: #15171A; border: 1px solid {{accent}}; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer">Choose WAV file</button>
+</div>
+</sc-if>
+
+<sc-if value="{{sel.has}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; background: {{accent}}; color: #15171A; border: 1px solid {{accent}}; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 2 L12 7 L3 12 Z"></path></svg>
+Play
+</button>
+<button type="button" style="height: 44px; padding: 0 16px; background: #2A2D33; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Replace</button>
+<button type="button" onClick="{{clearPad}}" style="height: 44px; padding: 0 16px; background: #2A2D33; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Clear</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Tuning</h3>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<label for="tune-coarse" style="font-size: 12px; color: #C9CDD4">Semitones</label>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; color: #F2F3F5">{{sel.coarseText}}</span>
+</div>
+<input id="tune-coarse" type="range" min="-24" max="24" step="1" value="{{sel.coarse}}" onChange="{{setCoarse}}" style="width: 100%; height: 44px; margin: 0; accent-color: {{accent}}; cursor: pointer">
+<div aria-hidden="true" style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #A9AEB8">
+<span>-24</span>
+<span>0</span>
+<span>+24</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<label for="tune-fine" style="font-size: 12px; color: #C9CDD4">Cents</label>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; color: #F2F3F5">{{sel.fineText}}</span>
+</div>
+<input id="tune-fine" type="range" min="-90" max="90" step="1" value="{{sel.fine}}" onChange="{{setFine}}" style="width: 100%; height: 44px; margin: 0; accent-color: {{accent}}; cursor: pointer">
+<div aria-hidden="true" style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #A9AEB8">
+<span>-90</span>
+<span>0</span>
+<span>+90</span>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="mute-group" style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Mute group</label>
+<select id="mute-group" value="{{sel.mute}}" onChange="{{setMute}}" style="height: 44px; padding: 0 10px; width: 100%; background: #15171A; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit">
+<option value="0">Off</option>
+<option value="1">Group 1</option>
+<option value="2">Group 2</option>
+<option value="3">Group 3</option>
+<option value="4">Group 4</option>
+</select>
+<span style="font-size: 12px; color: #A9AEB8">Pads in the same group cut each other off on the device.</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid #353A43">
+<button type="button" style="height: 44px; padding: 0 16px; background: #2A2D33; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Move to pad</button>
+<button type="button" style="height: 44px; padding: 0 16px; background: #2A2D33; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Copy to pad</button>
+</div>
+</div>
+</sc-if>
+</section>
+
+</main>
+</sc-if>
+
+<sc-if value="{{showSeqs}}" hint-placeholder-val="{{ false }}">
+<main style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-label="Sequence slots" style="flex: 1.4 1 380px; min-width: 0; background: #1E2126; border: 1px solid #353A43; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Sequence bank</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A9AEB8">{{seqBankSummary}}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{seqBanks}}" as="b" hint-placeholder-count="8">
+<button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" aria-label="{{b.aria}}" style="height: 44px; padding: 0; background: {{b.bg}}; color: {{b.fg}}; border: 1px solid {{b.border}}; border-radius: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer">{{b.label}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{seqCells}}" as="q" hint-placeholder-count="16">
+<button type="button" onClick="{{q.pick}}" aria-pressed="{{q.pressed}}" aria-label="{{q.aria}}" style="aspect-ratio: 1 / 1; min-height: 72px; padding: 8px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 4px; text-align: left; background: {{q.bg}}; color: #F2F3F5; border: 2px solid {{q.border}}; border-radius: 8px; font: inherit; cursor: pointer; overflow: hidden">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: {{q.numColor}}">{{q.label}}</span>
+<span style="font-size: 12px; font-weight: 600; line-height: 1.25; overflow: hidden; max-width: 100%; overflow-wrap: anywhere">{{q.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #C9CDD4; min-height: 15px">{{q.meta}}</span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 12px; color: #A9AEB8">Each pad is one sequence slot, 128 in total. Click an empty slot to add a sequence there.</p>
+</section>
+
+<section aria-label="Sequence settings" style="flex: 1 1 320px; min-width: 0; background: #1E2126; border: 1px solid #353A43; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: {{accent}}">{{seq.id}}</div>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #A9AEB8">Sequence settings</h2>
+<div style="font-weight: 600; overflow-wrap: anywhere">{{seq.title}}</div>
+</div>
+</div>
+
+<sc-if value="{{seq.empty}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border: 1px dashed #4A505B; border-radius: 8px">
+<p style="margin: 0; color: #C9CDD4">No sequence in this slot.</p>
+<button type="button" onClick="{{addSeq}}" style="height: 44px; padding: 0 16px; align-self: flex-start; background: {{accent}}; color: #15171A; border: 1px solid {{accent}}; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer">Add sequence</button>
+</div>
+</sc-if>
+
+<sc-if value="{{seq.has}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="seq-name" style="font-size: 12px; color: #C9CDD4">Name</label>
+<input id="seq-name" type="text" value="{{seq.name}}" onChange="{{setSeqName}}" style="height: 44px; padding: 0 10px; width: 100%; background: #15171A; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit">
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="seq-bpm" style="font-size: 12px; color: #C9CDD4">BPM</label>
+<input id="seq-bpm" type="number" min="20" max="300" step="1" value="{{seq.bpm}}" onChange="{{setSeqBpm}}" style="height: 44px; padding: 0 10px; width: 100%; background: #15171A; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 14px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="seq-bars" style="font-size: 12px; color: #C9CDD4">Length (bars)</label>
+<input id="seq-bars" type="number" min="1" step="1" value="{{seq.bars}}" onChange="{{setSeqBars}}" style="height: 44px; padding: 0 10px; width: 100%; background: #15171A; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 14px">
+</div>
+</div>
+<span style="font-size: 12px; color: #A9AEB8">Notes are recorded on the device. This screen sets name, tempo and length only.</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid #353A43">
+<button type="button" onClick="{{removeSeq}}" style="height: 44px; padding: 0 16px; background: #2A2D33; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 6px; font: inherit; font-weight: 500; cursor: pointer">Remove sequence</button>
+</div>
+</div>
+</sc-if>
+</section>
+
+</main>
+</sc-if>
+
+<footer style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A9AEB8">
+<span>{{sampleCount}}</span>
+<span>{{seqCount}}</span>
+<span>WAV files only</span>
+</footer>
+
+<sc-if value="{{aboutOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; padding: 24px; display: flex; align-items: center; justify-content: center; background: rgba(10, 11, 13, 0.78)">
+<div role="dialog" aria-modal="true" aria-labelledby="about-title" style="width: 100%; max-width: 440px; padding: 24px; display: flex; flex-direction: column; gap: 14px; background: #1E2126; color: #F2F3F5; border: 1px solid #4A505B; border-radius: 12px">
+<h2 id="about-title" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700">About MPCkit</h2>
+<p style="margin: 0; color: #C9CDD4">A desktop project and kit editor for the MPC Sample. Build kits on your computer, then export them to the device.</p>
+<div style="display: flex; flex-direction: column; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C9CDD4">
+<span>Version [VERSION]</span>
+<span>[LICENSE]</span>
+<a href="https://git.monoexp.com/bajdev/mpckit">git.monoexp.com/bajdev/mpckit</a>
+</div>
+<p style="margin: 0; font-size: 12px; color: #A9AEB8">An independent project, not affiliated with Akai Professional.</p>
+<button type="button" onClick="{{closeAbout}}" style="height: 44px; padding: 0 20px; align-self: flex-end; background: {{accent}}; color: #15171A; border: 1px solid {{accent}}; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer">Close</button>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5A524","options":["#F5A524","#5BC0EB","#9BE564","#FF8A5B"]},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+state = {
+name: 'MyKit',
+aboutOpen: false,
+tab: 'pads',
+bank: 0,
+sel: 0,
+seqBank: 0,
+selSeq: 0,
+pads: {
+0: { file: 'Kick.wav', frames: 8213, coarse: 0, fine: 0, start: 0, end: 8212, mute: 0 },
+1: { file: 'Snare.wav', frames: 27000, coarse: 0, fine: 0, start: 0, end: 26999, mute: 0 },
+2: { file: 'Hat Closed.wav', frames: 22446, coarse: 0, fine: 0, start: 0, end: 22445, mute: 1 },
+3: { file: 'Hat Open.wav', frames: 108000, coarse: 0, fine: 0, start: 0, end: 107999, mute: 1 },
+4: { file: 'Kick.wav', frames: 8213, coarse: 12, fine: 40, start: 328, end: 3777, mute: 0 },
+16: { file: 'Pad Loop Cm.wav', frames: 371368, coarse: 0, fine: 0, start: 0, end: 371367, mute: 0 },
+17: { file: 'Bass C.wav', frames: 132557, coarse: -2, fine: 0, start: 0, end: 132556, mute: 0 }
+},
+seqs: {
+0: { name: 'Intro', bpm: 110, bars: 2 },
+1: { name: 'Verse', bpm: 110, bars: 8 },
+2: { name: 'Chorus', bpm: 110, bars: 4 }
+}
+};
+renderVals() {
+var self = this;
+var s = this.state;
+var accent = this.props.accent ?? '#F5A524';
+var letters = 'ABCDEFGH';
+var two = function (n) { return n < 10 ? '0' + n : '' + n; };
+var num = function (e) { var v = parseInt(e.target.value, 10); return isNaN(v) ? 0 : v; };
+var signed = function (n) { return (n > 0 ? '+' : '') + n; };
+var setPad = function (patch) {
+self.setState(function (st) {
+var pads = Object.assign({}, st.pads);
+pads[st.sel] = Object.assign({}, pads[st.sel], patch);
+return { pads: pads };
+});
+};
+var setSeq = function (patch) {
+self.setState(function (st) {
+var seqs = Object.assign({}, st.seqs);
+seqs[st.selSeq] = Object.assign({}, seqs[st.selSeq], patch);
+return { seqs: seqs };
+});
+};
+var tuneText = function (p) {
+if (!p.coarse && !p.fine) return '';
+var v = p.coarse + p.fine / 100;
+return (v > 0 ? '+' : '') + v.toFixed(2);
+};
+var countIn = function (map, bank) {
+var c = 0;
+for (var k = 0; k < 16; k++) { if (map[bank * 16 + k]) c++; }
+return c;
+};
+var bankButtons = function (map, current, what, pick) {
+return letters.split('').map(function (label, i) {
+var on = i === current;
+return {
+label: label,
+pressed: on ? 'true' : 'false',
+aria: 'Bank ' + label + ', ' + countIn(map, i) + ' of 16 ' + what,
+bg: on ? accent : '#2A2D33',
+fg: on ? '#15171A' : '#F2F3F5',
+border: on ? accent : '#4A505B',
+pick: function () { pick(i); }
+};
+});
+};
+var tabVals = function (id) {
+var on = s.tab === id;
+return {
+selected: on ? 'true' : 'false',
+fg: on ? '#F2F3F5' : '#A9AEB8',
+line: on ? accent : 'transparent',
+pick: function () { self.setState({ tab: id }); }
+};
+};
+
+var banks = bankButtons(s.pads, s.bank, 'pads filled', function (i) { self.setState({ bank: i, sel: i * 16 }); });
+var seqBanks = bankButtons(s.seqs, s.seqBank, 'slots used', function (i) { self.setState({ seqBank: i, selSeq: i * 16 }); });
+
+var cells = [];
+var seqCells = [];
+for (var row = 3; row >= 0; row--) {
+for (var col = 0; col < 4; col++) {
+(function (padNo) {
+var index = s.bank * 16 + padNo - 1;
+var p = s.pads[index];
+var on = index === s.sel;
+var label = letters[s.bank] + two(padNo);
+var badges = '';
+if (p) {
+var parts = [];
+var t = tuneText(p);
+if (t) parts.push(t);
+if (p.mute) parts.push('M' + p.mute);
+badges = parts.join(' · ');
+}
+cells.push({
+label: label,
+name: p ? p.file.replace(/\.wav$/i, '') : '',
+badges: badges,
+pressed: on ? 'true' : 'false',
+aria: 'Pad ' + label + (p ? ', ' + p.file : ', empty'),
+bg: p ? '#333842' : '#22252B',
+border: on ? accent : (p ? '#5A616E' : '#353A43'),
+numColor: on ? accent : '#A9AEB8',
+pick: function () { self.setState({ sel: index }); }
+});
+
+var qIndex = s.seqBank * 16 + padNo - 1;
+var q = s.seqs[qIndex];
+var qOn = qIndex === s.selSeq;
+var qLabel = letters[s.seqBank] + two(padNo);
+seqCells.push({
+label: qLabel,
+name: q ? q.name : '',
+meta: q ? q.bpm + ' · ' + q.bars + (q.bars === 1 ? ' bar' : ' bars') : '',
+pressed: qOn ? 'true' : 'false',
+aria: 'Sequence slot ' + qLabel + (q ? ', ' + q.name : ', empty'),
+bg: q ? '#333842' : '#22252B',
+border: qOn ? accent : (q ? '#5A616E' : '#353A43'),
+numColor: qOn ? accent : '#A9AEB8',
+pick: function () { self.setState({ selSeq: qIndex }); }
+});
+})(row * 4 + col + 1);
+}
+}
+
+var sp = s.pads[s.sel];
+var selId = letters[Math.floor(s.sel / 16)] + two(s.sel % 16 + 1);
+var sel = sp ? {
+id: selId, has: true, empty: false, file: sp.file,
+coarse: sp.coarse, fine: sp.fine, mute: '' + sp.mute,
+coarseText: signed(sp.coarse) + ' st', fineText: signed(sp.fine) + ' ct'
+} : {
+id: selId, has: false, empty: true, file: 'Empty',
+coarse: 0, fine: 0, mute: '0', coarseText: '0 st', fineText: '0 ct'
+};
+
+var sq = s.seqs[s.selSeq];
+var seqId = letters[Math.floor(s.selSeq / 16)] + two(s.selSeq % 16 + 1);
+var seq = sq ? {
+id: seqId, has: true, empty: false, title: 'Sequence ' + two(s.selSeq + 1),
+name: sq.name, bpm: sq.bpm, bars: sq.bars
+} : {
+id: seqId, has: false, empty: true, title: 'Empty slot',
+name: '', bpm: 120, bars: 2
+};
+
+var files = {};
+Object.keys(s.pads).forEach(function (k) { if (s.pads[k]) files[s.pads[k].file] = true; });
+var seqTotal = Object.keys(s.seqs).filter(function (k) { return s.seqs[k]; }).length;
+
+return {
+accent: accent,
+name: s.name,
+setName: function (e) { self.setState({ name: e.target.value }); },
+aboutOpen: s.aboutOpen,
+openAbout: function () { self.setState({ aboutOpen: true }); },
+closeAbout: function () { self.setState({ aboutOpen: false }); },
+padsTab: tabVals('pads'),
+seqsTab: tabVals('seqs'),
+showPads: s.tab === 'pads',
+showSeqs: s.tab === 'seqs',
+banks: banks,
+bankSummary: 'Bank ' + letters[s.bank] + ' · ' + countIn(s.pads, s.bank) + ' of 16 filled',
+cells: cells,
+sel: sel,
+setCoarse: function (e) { setPad({ coarse: Math.max(-24, Math.min(24, num(e))) }); },
+setFine: function (e) { setPad({ fine: Math.max(-90, Math.min(90, num(e))) }); },
+setMute: function (e) { setPad({ mute: num(e) }); },
+clearPad: function () {
+self.setState(function (st) {
+var pads = Object.assign({}, st.pads);
+delete pads[st.sel];
+return { pads: pads };
+});
+},
+seqBanks: seqBanks,
+seqBankSummary: 'Bank ' + letters[s.seqBank] + ' · ' + countIn(s.seqs, s.seqBank) + ' of 16 used',
+seqCells: seqCells,
+seq: seq,
+setSeqName: function (e) { setSeq({ name: e.target.value }); },
+setSeqBpm: function (e) { setSeq({ bpm: Math.max(1, num(e)) }); },
+setSeqBars: function (e) { setSeq({ bars: Math.max(1, num(e)) }); },
+addSeq: function () {
+self.setState(function (st) {
+var seqs = Object.assign({}, st.seqs);
+var bpm = 120;
+Object.keys(seqs).forEach(function (k) { if (seqs[k]) bpm = seqs[k].bpm; });
+seqs[st.selSeq] = { name: 'Sequence ' + two(st.selSeq + 1), bpm: bpm, bars: 2 };
+return { seqs: seqs };
+});
+},
+removeSeq: function () {
+self.setState(function (st) {
+var seqs = Object.assign({}, st.seqs);
+delete seqs[st.selSeq];
+return { seqs: seqs };
+});
+},
+sampleCount: Object.keys(files).length + ' of 128 samples',
+seqCount: seqTotal + ' of 128 sequences'
+};
+}
+}
+</script>
+</body>
+</html>
