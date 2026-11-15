@@ -6,6 +6,8 @@ vars:
   # Shown in the About dialog of production builds: the version, and the
   # commit it was built from ("-dirty" if there were uncommitted changes).
   # Keep APP_VERSION in step with `version` in build/config.yml.
+  # A VERSION variable (CI passes the tag without its "v") overrides it in
+  # the build flags of build/<os>/Taskfile.yml.
   APP_VERSION: "0.5.5"
   COMMIT:
     sh: git describe --always --dirty --exclude "*" 2>/dev/null || echo unknown
