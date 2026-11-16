@@ -1,10 +1,10 @@
 # MPCkit waveform and start/end editor: work plan
 
-Written 2026-11-14. **Not scheduled.** bajdev has not decided to build this feature; the plan is here so an agent can pick it up if he does. Nothing in it is to be started without his go-ahead.
+Written 2026-11-14. **Going ahead for 0.6.0** (bajdev, 2026-11-16). PR W1 is done; PRs W2-W5 follow in order, each after the one before it is merged.
 
 The feature: see a pad's sample as a waveform, set where it starts and ends, and zoom in to place both points exactly. The scope document lists it under "2.0 or later" as "Start and end trim, together with a waveform view".
 
-Five PRs. PR W1 fixes a preview bug that exists today; it is now PR 13 of the review plan and will be done either way. PRs W2-W4 build the feature. PR W5 releases it after a check on the device.
+Five PRs. PR W1 fixed a preview bug; it was done as PR 13 of the review plan and released in 0.5.5. PRs W2-W4 build the feature. PR W5 releases it after a check on the device.
 
 ## What it adds, and what it costs
 
@@ -30,7 +30,7 @@ Read this before deciding to build it.
 - **Preview:** `play()` in `frontend/src/lib/audio.ts` plays only the region from `start` to `end`.
 - **Decoded audio:** `/audio/<slot>?pcm=1` serves every frame as 32-bit floats, used when the webview cannot decode a format.
 - **Copy, move, swap** carry the whole pad, so a pad's start and end travel with it. **Replace** builds the pad from the template, so it resets them. Both are right as they are.
-- **Dialogs:** `Modal.svelte` (review plan, PR 12) gives the backdrop, Escape and focus handling. PR W3 needs it merged first.
+- **Dialogs:** `Modal.svelte` (review plan, PR 12, merged) gives the backdrop, Escape and focus handling.
 - **`TestRebuildDemo02`** sets the three slice fields by hand, with a comment that trim is a 2.0 feature. PR W2 replaces that with the real call.
 
 ## Problems found while planning
@@ -70,25 +70,20 @@ On the pad it trimmed, the device wrote `sliceInfo.LoopCrossfadeLength` 0. MPCki
 
 ## Decisions
 
-Settled with bajdev on 2026-11-14:
+Settled with bajdev:
 
-| # | Topic | Decision |
-| --- | --- | --- |
-| 1 | Where the waveform goes | In a dialog built on `Modal.svelte`, opened from a button in Pad settings. Not in the panel itself. |
-| 2 | Where this plan lives | This file. |
-
-Proposed by the plan, **to confirm with bajdev before PR W2 starts**:
-
-| # | Topic | Proposal |
-| --- | --- | --- |
-| 3 | Version | The feature ships as 0.6.0 (still beta). |
-| 4 | When an edit is saved | The dialog works on its own copy. **Apply** saves start and end in one step; Cancel and Escape drop the changes. |
-| 5 | Shortest region | End must be after start: at least 2 frames. |
-| 6 | `LoopCrossfadeLength` | Leave the field as it is when start and end change. Revisit only if the device check (W5) shows a problem. |
-| 7 | Units | Start and end are shown and typed as frames, with the time in milliseconds beside each. |
-| 8 | Stereo | One waveform: at each point, the loudest of the channels. |
-| 9 | Trimmed marker on the pad grid | None in this version. |
-| 10 | Command line | Add `-trim PAD=START:END` to `mpckit-cli`, so start and end can be tested on the server and used in scripts. |
+| # | Topic | Decision | Settled |
+| --- | --- | --- | --- |
+| 1 | Where the waveform goes | In a dialog built on `Modal.svelte`, opened from a button in Pad settings. Not in the panel itself. | 2026-11-14 |
+| 2 | Where this plan lives | This file. | 2026-11-14 |
+| 3 | Version | The feature ships as 0.6.0 (still beta). | 2026-11-16 |
+| 4 | When an edit is saved | The dialog works on its own copy. **Apply** saves start and end in one step; Cancel and Escape drop the changes. | 2026-11-16 |
+| 5 | Shortest region | End must be after start: at least 2 frames. | 2026-11-16 |
+| 6 | `LoopCrossfadeLength` | Leave the field as it is when start and end change. Revisit only if the device check (W5) shows a problem. | 2026-11-16 |
+| 7 | Units | Start and end are shown and typed as frames, with the time in milliseconds beside each. | 2026-11-16 |
+| 8 | Stereo | One waveform: at each point, the loudest of the channels. | 2026-11-16 |
+| 9 | Trimmed marker on the pad grid | None in this version. | 2026-11-16 |
+| 10 | Command line | Add `-trim PAD=START:END` to `mpckit-cli`, so start and end can be tested on the server and used in scripts. | 2026-11-16 |
 
 Out of scope: loop points and loop modes, slicing a sample across pads, snapping to zero crossings, changing the audio file, fades, and undo.
 
@@ -112,7 +107,7 @@ PR W1 preview-timing  →  PR W2 trim-model  →  PR W3 waveform-view  →  PR W
 
 | PR | Branch | What | Needs |
 | --- | --- | --- | --- |
-| W1 | `preview-timing` | Fix the preview's start and end; send frame count and sample rate with the audio. **Now review plan PR 13** | nothing |
+| W1 | `preview-timing` | Fix the preview's start and end; send frame count and sample rate with the audio. **Done** as review plan PR 13, released in 0.5.5 | nothing |
 | W2 | `trim-model` | `SetTrim` in the model, the app service and `mpckit-cli` | decisions 3-10 confirmed |
 | W3 | `waveform-view` | The dialog with the waveform, zoom, scroll and play | W1, and review plan PR 12 merged |
 | W4 | `trim-editor` | Markers, fields, Apply and Reset | W2 and W3 |
@@ -124,7 +119,7 @@ Each PR starts from `main` after the one before it is merged.
 
 ### PR W1: `preview-timing`
 
-Moved on 2026-11-14 to `docs/review-fixes-plan.md` as **PR 13**, because bajdev will fix the bug whether or not the feature is built. Its tasks are there. PR W3 needs it merged.
+**Done.** Moved on 2026-11-14 to `docs/review-fixes-plan.md` as **PR 13**, because bajdev would fix the bug whether or not the feature was built. Its tasks are there. It was merged and released in 0.5.5, so PR W3 can use it.
 
 ### PR W2: `trim-model`
 
