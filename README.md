@@ -1,57 +1,65 @@
-# mpckit
+<img src="src/build/appicon.png" alt="" width="96">
 
-Build kits for the Akai MPC Sample on your computer, then copy them to the device.
+# MPCkit
 
-[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
+**Build Akai MPC Sample projects on your computer.**
 
-> **Beta.** mpckit works on the projects it has been tested with, but keep a copy of any project you care about before opening it here.
+Drop WAV files onto pads, tune them, set mute groups and sequences, then export a project the MPC Sample opens as it is. MPCkit can also open a project saved on the device, so you can change it on a bigger screen and send it back.
 
-mpckit is a desktop app for Windows, macOS and Linux. It reads and writes MPC Sample project files (`.xpj`) and their sample folders, so you can lay out pads with a mouse and keyboard and leave the device for making beats.
+**[Download MPCkit](https://github.com/bajdev/MPCkit/releases/latest)** for Windows, macOS or Linux. It's free.
 
-## What it does
+> **Beta.** MPCkit is in testing (version 0.5). Expect a few rough edges, and keep a copy of any project you care about before opening it in MPCkit.
 
-- Start a new project or load one saved on the device.
-- Assign WAV files to pads, banks A–H, 16 pads each. Drop files straight from your file manager.
-- Move, copy and swap pads, across banks too.
-- Tune pads (semitones and cents) and set mute groups.
-- Click a pad to hear it, with its tuning and mute-group choking.
-- Add sequences and set their name, BPM and length. Recorded notes are kept but not edited.
-- Export a project to a folder or a zip, ready to copy to the device.
+![The MPCkit window on the Pads tab: bank A with ten drum samples, and the settings for pad A1 on the right](docs/images/pads.png)
 
-Not in this version: trimming with a waveform view, level and pan, loop and trigger modes, effects and note editing.
+## Features
 
-## Download
+- **Pads and banks.** All 128 pads, in eight banks of 16. Drop a WAV file on a pad to assign it, click a pad to hear it, and drag pads to move, swap or copy them.
+- **Tuning and mute groups.** Tune each pad by up to 24 semitones and 90 cents either way. Put pads in mute groups so they cut each other off, as on the device.
+- **Sequences.** Up to 128 sequences, each with a name, a tempo (20–999 BPM) and a length in bars. You record the notes on the device.
+- **Open and export.** Open a project saved on the device, change it, and export it to a folder (for example straight onto the card) or to a zip.
+- **Small, native and offline.** One small app for Windows, macOS and Linux. No installer, no account and no tracking. MPCkit never connects to the internet: your samples and projects stay on your computer.
 
-Get the latest build from [Releases](https://github.com/bajdev/MPCkit/releases).
+![The MPCkit window on the Sequences tab: six sequences in bank A, with the name, BPM and length of the selected one on the right](docs/images/sequences.png)
 
-| System | File |
-|---|---|
-| Windows 10 / 11 (64-bit) | `mpckit-<version>-windows-amd64.zip` |
-| macOS (Apple silicon and Intel) | `mpckit-<version>-macos-universal.zip` |
+Not in MPCkit yet: trimming samples with a waveform, level and pan, loop and trigger modes, effects, and editing recorded notes.
+
+## Download and install
+
+Download the file for your computer from the **[latest release](https://github.com/bajdev/MPCkit/releases/latest)**:
+
+| Your computer | File to download |
+| --- | --- |
+| Windows 10 or 11 (64-bit) | `mpckit-<version>-windows-amd64.zip` |
+| Mac (Apple silicon or Intel) | `mpckit-<version>-macos-universal.zip` |
 | Linux (64-bit) | `mpckit-<version>-linux-amd64.tar.gz` |
 
-### First run
+MPCkit isn't signed yet, so your computer warns you the first time you open it. This is expected:
 
-The builds are not signed yet, so each system asks once before opening the app.
+- **Windows:** unzip and run `mpckit.exe`. If you see "Windows protected your PC", choose **More info**, then **Run anyway**.
+- **Mac:** unzip and move `mpckit.app` to Applications, then open it. When macOS blocks it, open **System Settings → Privacy & Security** and choose **Open Anyway**.
+- **Linux:** extract and run `./mpckit`. It needs GTK 4 and WebKitGTK 6.0; on Debian and Ubuntu, install them with `sudo apt install libgtk-4-1 libwebkitgtk-6.0-4`.
 
-- **Windows:** if SmartScreen appears, choose **More info**, then **Run anyway**. mpckit uses the Microsoft WebView2 runtime, which comes with Windows 11 and current Windows 10.
-- **macOS:** unzip and move `mpckit.app` to Applications. Open it once; when macOS blocks it, go to **System Settings → Privacy & Security** and choose **Open Anyway**.
-- **Linux:** extract and run `./mpckit`. It needs GTK 4 and WebKitGTK 6.0 (on Debian and Ubuntu: `sudo apt install libgtk-4-1 libwebkitgtk-6.0-4`).
+## Getting your project onto the MPC Sample
 
-## Getting a project onto the device
-
-Export writes two things side by side:
+When you export, MPCkit writes two things side by side:
 
 ```
 MyKit.xpj
-MyKit_[ProjectData]/      the samples used by the project
+MyKit_[ProjectData]/      the samples your project uses
 ```
 
-Copy both, together, to the device's storage and load `MyKit` on the MPC Sample. The project's name comes from these two names, so rename them only inside mpckit.
+Copy **both**, together, to the MPC Sample's storage, then load `MyKit` on the device. The project's name comes from these two names, so rename a project only inside MPCkit.
 
-## Building from source
+## Found a bug or have an idea?
 
-You need Go (the version in `src/go.mod`), Node.js 22 or newer, and the Wails v3 CLI at the version in `src/go.mod`. On Linux you also need the GTK and WebKitGTK development packages; `wails3 doctor` lists what is missing.
+[Open an issue](https://github.com/bajdev/MPCkit/issues). Results from trying MPCkit's projects on a real MPC Sample are especially welcome.
+
+## For developers
+
+MPCkit is written in Go with [Wails v3](https://github.com/wailsapp/wails), and its window in Svelte and TypeScript.
+
+To build it, you need Go (the version in `src/go.mod`), Node.js 22 or newer, and the Wails v3 CLI at the version in `src/go.mod`. On Linux you also need the GTK and WebKitGTK development packages; `wails3 doctor` lists anything missing.
 
 ```sh
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0   # match src/go.mod
@@ -61,20 +69,20 @@ wails3 build        # build for this system into src/bin/
 go test ./...       # run the tests
 ```
 
-## Repository layout
+What's where:
 
 ```
 src/      the app: Go code, Svelte frontend, Wails build files, test projects
-docs/     project file format notes and the build plan
+docs/     project file format notes, plans and screenshots
 .github/  CI: builds for all three systems on every pull request and tag
 ```
 
-## Contributing
+Pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
-Bug reports, device test results and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
 
-## License
+## License and disclaimer
 
-[MIT](LICENSE).
+MPCkit is [MIT licensed](LICENSE).
 
-mpckit is an independent project, not made or endorsed by Akai Professional or inMusic. MPC and MPC Sample are trademarks of their owners.
+MPCkit is an independent project. It is not affiliated with, endorsed by or supported by Akai Professional or inMusic Brands. Akai, MPC and MPC Sample are trademarks of their respective owners and are used here only to describe the device MPCkit works with.
