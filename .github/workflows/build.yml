@@ -1,5 +1,7 @@
 # Builds mpckit for Linux, Windows and macOS.
 #   Pull requests and pushes to main: build, vet and test on all three systems; builds kept 14 days as artifacts.
+#            When only docs change (docs/, root *.md, LICENSE, issue and PR templates), the three Build
+#            jobs still run, so the required checks report, but skip every step and pass in seconds.
 #   Tags v*: the same, then a draft GitHub release with all builds and SHA256SUMS.txt.
 #            Tags with a hyphen (v1.0.0-beta.1) or a 0.x version (v0.5.5) are marked as pre-releases.
 name: Build
@@ -28,8 +30,47 @@ defaults:
     working-directory: src
 
 jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-24.04
+    outputs:
+      app: ${{ steps.diff.outputs.app }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Decides whether this run builds. Only changes that cannot affect the
+      # app skip the build; anything else, and anything uncertain, builds.
+      - name: Check what changed
+        id: diff
+        working-directory: .
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          # Paths that never affect a build.
+          DOCS: '^(docs/|[^/]+\.md$|LICENSE$|\.github/(ISSUE_TEMPLATE/|pull_request_template\.md$|CODEOWNERS$))'
+        run: |
+          range=""
+          if [[ "$EVENT" == pull_request ]]; then
+            range="$BASE_SHA...$HEAD_SHA"
+          elif [[ "$EVENT" == push && "$GITHUB_REF_TYPE" == branch && ! "$BEFORE" =~ ^0+$ ]]; then
+            range="$BEFORE..$GITHUB_SHA"
+          fi
+          app=true
+          if [[ -n "$range" ]] && files="$(git diff --name-only "$range")" && [[ -n "$files" ]]; then
+            echo "Changed files:"
+            echo "$files"
+            grep -qvE "$DOCS" <<<"$files" || app=false
+          fi
+          echo "Build the app: $app"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build (${{ matrix.platform }})
+    needs: changes
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -41,22 +82,32 @@ jobs:
             os: windows-latest
           - platform: macos
             os: macos-latest
+    # Every step checks the Changes job, rather than the whole job, because a
+    # skipped matrix job would not report the required "Build (...)" checks.
     steps:
+      - name: Skip, only docs changed
+        if: needs.changes.outputs.app != 'true'
+        working-directory: . # nothing is checked out, so src/ does not exist
+        run: echo "Only docs changed; nothing to build."
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.app == 'true'
 
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.app == 'true'
         with:
           go-version-file: src/go.mod
           cache-dependency-path: src/go.sum
 
       - uses: actions/setup-node@v5
+        if: needs.changes.outputs.app == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
+        if: needs.changes.outputs.app == 'true' && runner.os == 'Linux'
         working-directory: .
         run: |
           sudo apt-get update
@@ -65,12 +116,14 @@ jobs:
             build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
 
       - name: Install Wails CLI (same version as go.mod)
+        if: needs.changes.outputs.app == 'true'
         run: |
           WAILS_VERSION="$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
           echo "Wails $WAILS_VERSION"
           go install "github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}"
 
       - name: Set version
+        if: needs.changes.outputs.app == 'true'
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
@@ -81,6 +134,7 @@ jobs:
           echo "Version: $VERSION"
 
       - name: Build
+        if: needs.changes.outputs.app == 'true'
         run: |
           case "${{ matrix.platform }}" in
             linux)   wails3 task linux:build PRODUCTION=true VERSION="$VERSION" ;;
@@ -90,16 +144,18 @@ jobs:
           ls -l bin
 
       - name: Vet and test
+        if: needs.changes.outputs.app == 'true'
         run: |
           go vet ./...
           go test ./...
 
       - name: Check frontend
-        if: runner.os == 'Linux'
+        if: needs.changes.outputs.app == 'true' && runner.os == 'Linux'
         working-directory: src/frontend
         run: npm run check --if-present
 
       - name: Collect release files
+        if: needs.changes.outputs.app == 'true'
         run: |
           dist="$RUNNER_TEMP/dist"
           mkdir -p "$dist"
@@ -118,6 +174,7 @@ jobs:
           ls -l "$dist"
 
       - uses: actions/upload-artifact@v6
+        if: needs.changes.outputs.app == 'true'
         with:
           name: ${{ env.APP_NAME }}-${{ matrix.platform }}
           path: ${{ runner.temp }}/dist/*
