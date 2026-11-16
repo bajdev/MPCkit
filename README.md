@@ -1,5 +1,3 @@
-<img src="src/build/appicon.png" alt="" width="96">
-
 # MPCkit
 
 **Build Akai MPC Sample projects on your computer.**
