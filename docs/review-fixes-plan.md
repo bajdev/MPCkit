@@ -78,7 +78,11 @@ To check that the app starts, run `timeout 15 xvfb-run -a bin/mpckit` and read i
 
 ### Releases
 
-Releases follow `CLAUDE.md`. On an up-to-date `main`, a `vX.Y.Z` tag (0.x while in beta) is pushed, by bajdev or by an agent bajdev asks to. CI then builds all three systems, stamps the version from the tag into the About window, and makes a draft release, which bajdev checks and publishes.
+Releases follow `CLAUDE.md`:
+
+1. When bajdev asks an agent for a release, the agent pushes a `vX.Y.Z` tag (0.x while in beta) on an up-to-date `main`. Agents do not tag on their own initiative.
+2. CI builds all three systems, stamps the version from the tag into the About window, and makes a draft release. An agent may create or edit the draft, for example to write its notes.
+3. bajdev reviews the draft and publishes it. **Agents never publish a release.**
 
 Some files still carry a fixed version that the tag does not change. Keep them in step in a pull request before the tag:
 - `APP_VERSION` in `Taskfile.yml`, the fallback for local builds;
