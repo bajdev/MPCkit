@@ -159,6 +159,14 @@ export function SetSequence(slot: number, name: string, bpm: number, bars: numbe
 }
 
 /**
+ * SetTrim sets where a pad's sample starts and ends, in frames of the
+ * sample file.
+ */
+export function SetTrim(slot: number, start: number, end: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(389283804, slot, start, end);
+}
+
+/**
  * SetTune sets a pad's tuning in semitones and cents.
  */
 export function SetTune(slot: number, coarse: number, fine: number): $CancellablePromise<$models.State> {

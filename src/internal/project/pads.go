@@ -1,7 +1,9 @@
 package project
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -399,6 +401,59 @@ func (p *Project) SetTune(slot, coarse, fine int) error {
 	e.set(l, "coarseTune", xpj.NewInt(int64(coarse)))
 	e.set(l, "fineTune", xpj.NewInt(int64(fine)))
 	e.set(l, "pitch", xpj.NewFloat32(float64(coarse)+float64(fine)/100))
+	if e.err != nil {
+		return e.err
+	}
+	p.dirty = true
+	return nil
+}
+
+// SetTrim sets the region of the pad's sample that plays: start and end are
+// frames of the sample file, at its own rate (format doc, "Trim start and
+// end"). The region must hold at least two frames and lie within the file,
+// whose frame count is read from the source. Only sliceInfo.Start,
+// LoopStart and End change; the audio file is not touched.
+func (p *Project) SetTrim(slot int, start, end int64) error {
+	if err := checkSlot(slot); err != nil {
+		return err
+	}
+	l, err := layer(p.pad(slot))
+	if err != nil {
+		return err
+	}
+	file := text(l.Lookup("sampleFile"))
+	if file == "" {
+		return fmt.Errorf("pad %s has no sample", SlotName(slot))
+	}
+	src := p.sources[file]
+	if src == "" {
+		return fmt.Errorf("%s: the sample file is missing", file)
+	}
+	info, err := wav.ReadFile(src)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%s: the sample file is missing (%s)", file, src)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", file, err)
+	}
+	last := info.Frames - 1
+	switch {
+	case start < 0:
+		return fmt.Errorf("start %d is before the first frame; it can be 0 to %d", start, last-1)
+	case end > last:
+		return fmt.Errorf("end %d is past the sample's last frame; it can be 1 to %d", end, last)
+	case start >= end:
+		return fmt.Errorf("start %d must be before end %d: at least 2 frames must play", start, end)
+	}
+	si := l.Lookup("sliceInfo")
+	if si == nil || si.Kind != xpj.Object {
+		return fmt.Errorf("project: pad %s has no sliceInfo object", SlotName(slot))
+	}
+	// Setting keys on an object cannot fail, so all three are written.
+	var e setter
+	e.set(si, "Start", xpj.NewInt(start))
+	e.set(si, "LoopStart", xpj.NewInt(start))
+	e.set(si, "End", xpj.NewInt(end))
 	if e.err != nil {
 		return e.err
 	}

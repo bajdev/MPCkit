@@ -357,6 +357,12 @@ func (s *Service) SetTune(slot, coarse, fine int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.SetTune(slot, coarse, fine) })
 }
 
+// SetTrim sets where a pad's sample starts and ends, in frames of the
+// sample file.
+func (s *Service) SetTrim(slot int, start, end int64) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.SetTrim(slot, start, end) })
+}
+
 // SetMuteGroup sets a pad's mute group; 0 is off.
 func (s *Service) SetMuteGroup(slot, group int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.SetMuteGroup(slot, group) })
