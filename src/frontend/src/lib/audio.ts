@@ -33,7 +33,11 @@ function context(): AudioContext {
   return ctx;
 }
 
-function load(url: string): Promise<Sample> {
+/**
+ * Loads a pad's sample from Go, once: later calls for the same URL share the
+ * first load. The start/end editor uses it too.
+ */
+export function loadSample(url: string): Promise<Sample> {
   let p = samples.get(url);
   if (!p) {
     p = fetchSample(url);
@@ -107,7 +111,7 @@ function stop(slot: number) {
 /** Plays a pad. Throws if the sample cannot be loaded or decoded. */
 export async function play(p: Playable): Promise<void> {
   if (!p.audio) return;
-  const sample = await load(p.audio);
+  const sample = await loadSample(p.audio);
   const c = context();
 
   stop(p.slot); // pads are monophonic: a new hit restarts the pad

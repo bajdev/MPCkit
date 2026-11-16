@@ -7,6 +7,7 @@
   import ConfirmModal from "./lib/ConfirmModal.svelte";
   import PadPanel from "./lib/PadPanel.svelte";
   import PadPicker from "./lib/PadPicker.svelte";
+  import TrimEditor from "./lib/TrimEditor.svelte";
   import { transfer, transferKind } from "./lib/pads";
   import SequencePanel from "./lib/SequencePanel.svelte";
   import SlotGrid, { type Cell } from "./lib/SlotGrid.svelte";
@@ -259,6 +260,9 @@
   {/if}
   {#if ui.picker && st}
     <PadPicker picker={ui.picker} {pads} onclose={() => (ui.picker = null)} />
+  {/if}
+  {#if ui.trim !== null && pads[ui.trim]?.file}
+    <TrimEditor pad={pads[ui.trim]} onclose={() => (ui.trim = null)} />
   {/if}
   {#if ui.confirm}
     <ConfirmModal c={ui.confirm} />
