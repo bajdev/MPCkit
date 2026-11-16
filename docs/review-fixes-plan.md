@@ -2,7 +2,9 @@
 
 Written 2026-11-12; PR 8b added 2026-11-13; PRs 10-12 (readability) added 2026-11-13; PR 13 (a preview bug found later) added 2026-11-14. Ten PRs (1-9 and 8b), worked one at a time, fix the findings of the MPCkit source code review of `e32802a` (v0.5.1, 2026-11-12). PRs 1-4 ship the security fixes as **0.5.2**; PRs 5-9, including 8b, ship the hardening work as **0.5.3**. Finding IDs (S1, M3, R1 and so on) refer to that review. Each PR below repeats what an agent needs from it, so the plan works without access to the review.
 
-PRs 1-9 and 8b are done: 0.5.2 and 0.5.3 are released. PRs 10-12 tidy the code for human review (R2-R7). They change no behaviour and no version. PR 13 fixes a bug in the pad preview that was found on 2026-11-14, after the review.
+All of it is done: PRs 1-4 shipped as 0.5.2, PRs 5-9 and 8b as 0.5.3, and PRs 10-13 as 0.5.5. PRs 10-12 tidy the code for human review (R2-R7) and change no behaviour. PR 13 fixes a bug in the pad preview that was found on 2026-11-14, after the review.
+
+**Since 2026-11-16 the project is on GitHub** (https://github.com/bajdev/MPCkit), with a fresh history and the app under `src/`. The PRs below were worked in the earlier private repository. Their commit IDs and branch names refer to that history, and paths in this plan are relative to `src/`, as in the other docs. The Decisions and the Guidelines for agents below are updated for GitHub; where they disagree with the repository's `CLAUDE.md` or `CONTRIBUTING.md`, those win.
 
 ## Decisions
 
@@ -13,16 +15,16 @@ These were settled with the user on 2026-11-12. Agents follow them and do not re
 | Decompression limit (S2) | 256 MB of decompressed project data (lowered from 512 MB on 2026-11-12, during PR 2: a blank project is 3 MB and 256 MB holds about half a million recorded events). |
 | Bound paths (S4) | Approved: `LoadPath` and `AssignSamplePath` stop being bound; export methods stop taking a path. |
 | Pad labels (M6) | Always the "A1" format (bank letter, pad number without a leading zero). |
-| Releases | 0.5.2 after PRs 1-3, 0.5.3 after PRs 5-8 and 8b. PRs in between do not change the version. |
-| CI (S6) | Out of scope. No CI files, no `task check`. |
-| PR records (R8) | Keep the current layout. R8 is dropped. |
+| Releases | 0.5.2 after PRs 1-3, 0.5.3 after PRs 5-8 and 8b, 0.5.5 after PRs 10-13 (0.5.4 was skipped, by choice). PRs in between do not change the version. |
+| CI (S6) | Out of scope for the review fixes. Since the move to GitHub (2026-11-16), CI builds and tests every pull request on Linux, Windows and macOS (`.github/workflows/build.yml`). |
+| PR records (R8) | R8 was dropped and the record files kept, while the project was private. Since the move to GitHub (2026-11-16), the pull request description replaces them. |
 | Formatter (R2) | Approved: add `prettier` and `prettier-plugin-svelte` as dev dependencies and reformat the whole frontend in one PR (PR 11). Decided 2026-11-13. |
 | Readability PRs (10-12) | No version bump and no release of their own; they ship in whichever release comes next. Decided 2026-11-13. |
 | S5, M9, M10, M11 | Skipped for now (2026-11-13). They stay in the Backlog and need decisions before they can be planned. |
 | Linked WAVs (PR 3) | A WAV the user picks that is a link is followed at assign: the pool file is named after the link, and its source is the file the link points to. Export refuses any source that is a link or sits in a linked folder. Decided 2026-11-12. |
 | New sample names (PR 3) | Besides `/`, `\` and control characters, the characters the device's FAT card forbids (`: * ? " < > \|`) also become `_`, and a name Windows reserves for a device (`CON.wav`, `aux.wav`, `com1.wav`) gets `_` added (`CON_.wav`). Decided 2026-11-12 and 2026-11-13. |
 
-Open: none. An agent that meets a choice this plan does not settle stops and asks bajdev in the PR record's Notes, instead of guessing.
+Open: none. An agent that meets a choice this plan does not settle stops and asks bajdev in the pull request's notes for the reviewer, instead of guessing.
 
 ## Guidelines for agents
 
@@ -30,27 +32,27 @@ These apply to every PR. Where they conflict with a PR's tasks, ask before going
 
 ### Branches and PRs
 
-1. Work on one PR at a time, in the order below. Start each branch from the latest `origin/main` after the previous PR is merged.
-2. Name the branch exactly as the plan does. Never push to `main`: it is protected on Gogs.
-3. Push with `git push -u origin <branch>`, then give bajdev the compare link: `https://git.monoexp.com/bajdev/mpckit/compare/main...<branch>`. Agents cannot open PRs; bajdev opens and merges them.
-4. Before adding commits to a pushed branch, check it is not merged yet (`git fetch --prune`, `git branch -r --merged origin/main`).
-5. After bajdev says a PR is merged: `git fetch --prune`, delete the branch on Gogs by hand only if it is fully in `origin/main` (`git push origin --delete <branch>`), then `git branch -d <branch>`. MPCkit is not on the deploy pipeline, so nothing deletes it automatically.
-6. End every commit message with the attribution line the session gives. Apart from that line, never put a model name in commits, code or PR records.
+1. Work on one PR at a time. Start each branch from the latest `origin/main`.
+2. Name branches as `CLAUDE.md` asks: short and descriptive, such as `fix/export-windows-paths` or `feat/appimage`. Never push to `main`: it is protected.
+3. Push with `git push -u origin <branch>`, then open a pull request with `gh pr create`. bajdev reviews and merges every pull request by hand. **Agents never approve or merge a pull request, their own included,** even when their GitHub access would allow it.
+4. Before adding commits to a pushed branch, check that its pull request is still open (`gh pr view <branch>`).
+5. After bajdev merges, `git fetch --prune` and delete the local branch. Delete the branch on GitHub only if GitHub has not already done so.
+6. End every commit message with the attribution line the session gives. Apart from that line, never put a model name in commits, code or pull requests.
 
-### PR records
+### Pull request descriptions
 
-Every PR adds `pull-requests/<branch>/<pr-summary>.md`, like the existing ones (see `pull-requests/mpckit-casing/`):
+Every pull request fills in `.github/pull_request_template.md`. Its description holds what the record files used to:
 
-- First line: `# <PR title>`, then ``Branch: `<branch>` → `main` ``.
-- **What changed**, in plain words, naming the finding IDs fixed.
-- **Notes**: decisions made along the way, anything left for later, questions for bajdev.
-- **Testing**: what ran on the server, then numbered steps for bajdev's Windows laptop (cmd or PowerShell commands, not `sh`).
+- **What this changes**, in plain words, naming the finding IDs fixed.
+- **How it was tested**: the template's checklist, then what ran on the server and numbered steps for bajdev's Windows laptop (cmd or PowerShell commands, not `sh`).
+- **Notes for the reviewer**: decisions made along the way, anything left for later, questions for bajdev.
 
 ### Checks before every push
 
-The VPS has Node 24, the GTK 4 and WebKitGTK 6 build files and Xvfb, so all of these run there:
+CI runs `go vet`, `go test` and a build on Linux, Windows and macOS for every pull request, and its three `Build (...)` checks must pass. Run these on the server too, from `src/`, before pushing; the VPS has Node 24, the GTK 4 and WebKitGTK 6 build files and Xvfb:
 
 ```
+cd src
 export PATH=$PATH:~/go/bin
 export GOTOOLCHAIN=go1.27.4   # openSUSE's Go defaults to local and ignores go.mod's toolchain line
 go test ./...
@@ -58,11 +60,11 @@ go vet ./...
 staticcheck ./...
 govulncheck ./...
 (cd frontend && npm ci && npm run check && npm run build)
-(cd frontend && npm run format:check)   # from PR 11 on
+(cd frontend && npm run format:check)
 wails3 build
 ```
 
-`npm ci` needs the lockfile from PR 8; until then use `npm install` and do not commit the lockfile it writes. `govulncheck` will keep reporting GO-2026-6859 until Go 1.27.4 is installed; mention it in Testing, do not try to work around it. To check that the app starts, run `timeout 15 xvfb-run -a bin/mpckit` and read its log.
+To check that the app starts, run `timeout 15 xvfb-run -a bin/mpckit` and read its log. Windows-only failures (file locking, paths) do not show on the server; CI's Windows build and the laptop catch them.
 
 ### Code
 
@@ -72,11 +74,18 @@ wails3 build
 - No new Go modules or npm packages without asking bajdev.
 - After changing a bound method in `internal/app`, regenerate the bindings with `wails3 task common:generate:bindings` and commit `frontend/bindings`.
 - Svelte 5: props are live, so a handler that clears the state behind a prop reads the prop first. Wails types Go slices as `T[] | null`; normalise with `?? []`.
-- The app is "MPCkit" wherever people see it; file names, the module path and `mpckit-cli` stay lowercase. Keep the "not affiliated with Akai Professional" notes.
+- The app is "MPCkit" wherever people see it; file names such as `bin/mpckit` and `mpckit-cli` stay lowercase. The Go module path is `github.com/bajdev/MPCkit`. Keep the "not affiliated with Akai Professional" notes.
 
-### Releases (PRs 4 and 9)
+### Releases
 
-The README's "Releasing" paragraph lists the files that carry the version; change all of them. After bajdev merges, tag the merge commit with an annotated tag: `git tag -a v0.5.2 -m "MPCkit 0.5.2 (beta)" <merge commit>`, then `git push origin v0.5.2`.
+Releases follow `CLAUDE.md`. On an up-to-date `main`, a `vX.Y.Z` tag (0.x while in beta) is pushed, by bajdev or by an agent bajdev asks to. CI then builds all three systems, stamps the version from the tag into the About window, and makes a draft release, which bajdev checks and publishes.
+
+Some files still carry a fixed version that the tag does not change. Keep them in step in a pull request before the tag:
+- `APP_VERSION` in `Taskfile.yml`, the fallback for local builds;
+- `version` in `build/config.yml`;
+- Windows: `build/windows/info.json` (four places), `wails.exe.manifest` and `nsis/wails_tools.nsh`;
+- macOS: `build/darwin/Info.plist` and `Info.dev.plist` (two places each);
+- Linux: `build/linux/nfpm/nfpm.yaml`.
 
 ## PR order
 
@@ -230,7 +239,7 @@ Each PR starts from `main` after the previous one is merged. The order matters i
 
 ### PR 8b. Bind only what the window needs (`bound-surface`)
 
-**Why.** PR 5 hid `LoadPath` and `AssignSamplePath` with `//wails:ignore`, but that directive only keeps them out of the generated `frontend/bindings`. At runtime Wails 3.1.0 registers every exported method of a bound type by reflection (`getMethods` in `pkg/application/bindings.go`), and reflection cannot see comments. So a script in the window can still call `Call.ByName("git.monoexp.com/bajdev/mpckit/internal/app.Service.LoadPath", "<any path>")`; on 2026-11-13 a scratch build did exactly that and Go loaded the file. The same holds for `AssignSamplePath` and the other Go-only methods (`Dirty`, `SetCloser`, `AudioMiddleware`). Also, when the user declines "Replace existing files?", Go keeps the chosen export target, so a later `ExportFolder(true)` would overwrite it without asking.
+**Why.** PR 5 hid `LoadPath` and `AssignSamplePath` with `//wails:ignore`, but that directive only keeps them out of the generated `frontend/bindings`. At runtime Wails 3.1.0 registers every exported method of a bound type by reflection (`getMethods` in `pkg/application/bindings.go`), and reflection cannot see comments. So a script in the window can still call `Call.ByName("<module>/internal/app.Service.LoadPath", "<any path>")`; on 2026-11-13 a scratch build did exactly that and Go loaded the file. The same holds for `AssignSamplePath` and the other Go-only methods (`Dirty`, `SetCloser`, `AudioMiddleware`). Also, when the user declines "Replace existing files?", Go keeps the chosen export target, so a later `ExportFolder(true)` would overwrite it without asking.
 
 **Tasks**
 
@@ -354,6 +363,6 @@ Not scheduled; skipped for now (2026-11-13). Each needs decisions before it can 
 | M10 | Internal error text (`xpj: path ...`) reaches the user; show one plain sentence and log the detail | `internal/app`, `main.go` |
 | M11 | `state()` stats every pool file and scans all events on each call, under the lock | `internal/app/app.go` |
 
-R2-R7 are planned as PRs 10-12. Dropped: R8 (PR record layout) and CI (part of S6), by decision.
+R2-R7 were done as PRs 10-12. R8 (PR record layout) and CI (part of S6) were dropped by decision; both came back in another form with the move to GitHub (see Decisions).
 
 A possible later feature, the waveform and start/end editor, has its own plan in `docs/waveform-plan.md`. The preview bug found while planning it is PR 13 here. Support for the other audio formats the device imports is planned in `docs/audio-formats-plan.md`.
