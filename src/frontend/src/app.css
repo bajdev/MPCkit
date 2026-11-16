@@ -1,0 +1,249 @@
+/* Colours and type from the agreed mockup (docs/mockup/Main.dc.html). */
+:root {
+  --bg: #15171a;
+  --surface: #1e2126;
+  --raised: #2a2d33;
+  --line: #353a43;
+  --edge: #4a505b;
+  --text: #f2f3f5;
+  --soft: #c9cdd4;
+  --muted: #a9aeb8;
+  --cell-empty: #22252b;
+  --cell-filled: #333842;
+  --cell-filled-edge: #5a616e;
+  --accent: #f5a524;
+  --accent-hover: #ffc35a;
+  --on-accent: #15171a;
+  --sans: Inter, system-ui, sans-serif;
+  --display: "Space Grotesk", Inter, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* The app always fills the window exactly and never scrolls as a page;
+   the grids shrink to the height that is left (see App.svelte). */
+html,
+body,
+#app {
+  height: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--accent);
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Small uppercase section labels. */
+.eyebrow {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Buttons. */
+.btn {
+  height: 40px;
+  padding: 0 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn.secondary {
+  background: var(--raised);
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Text, number and select fields. */
+.field {
+  height: 40px;
+  padding: 0 10px;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  font: inherit;
+}
+.field.mono {
+  font-family: var(--mono);
+}
+
+/* The two side-by-side panels of each tab. */
+.panels {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+.panel {
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.panel.grid-panel {
+  flex: 1.4 1 0;
+  gap: 10px;
+  padding: 14px;
+}
+.panel.settings {
+  flex: 1 1 0;
+  gap: 12px;
+  padding: 14px;
+  overflow-y: auto; /* only when the window is very short */
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.panel-head .slot-id {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.panel-head .title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.panel-head .title div {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--edge);
+  border-radius: 8px;
+}
+.empty-box p {
+  margin: 0;
+  color: var(--soft);
+}
+.empty-box .btn {
+  align-self: flex-start;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.row.divided {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.label {
+  font-size: 12px;
+  color: var(--soft);
+}
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.control .top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.control .value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+}
+.control input[type="range"] {
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.control .scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pending {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}

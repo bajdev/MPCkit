@@ -1,0 +1,47 @@
+version: '3'
+
+vars:
+  APP_NAME: "mpckit"         # file names: bin/mpckit, mpckit.exe, mpckit.app
+  PRODUCT_NAME: "MPCkit"     # the name people see, e.g. in the Linux menu
+  # Shown in the About dialog of production builds: the version, and the
+  # commit it was built from ("-dirty" if there were uncommitted changes).
+  # Keep APP_VERSION in step with `version` in build/config.yml.
+  # A VERSION variable (CI passes the tag without its "v") overrides it in
+  # the build flags of build/<os>/Taskfile.yml.
+  APP_VERSION: "0.5.5"
+  COMMIT:
+    sh: git describe --always --dirty --exclude "*" 2>/dev/null || echo unknown
+  BIN_DIR: "bin"
+  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
+  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  # Target OS for build/package/run. Defaults to the host OS, and is overridden
+  # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
+  # tasks below dispatch to the matching platform Taskfile via this variable.
+  GOOS: '{{.GOOS | default OS}}'
+
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+  darwin: ./build/darwin/Taskfile.yml
+  linux: ./build/linux/Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the application
+    cmds:
+      - task: "{{.GOOS}}:build"
+
+  package:
+    summary: Packages a production build of the application
+    cmds:
+      - task: "{{.GOOS}}:package"
+
+  run:
+    summary: Runs the application
+    cmds:
+      - task: "{{.GOOS}}:run"
+
+  dev:
+    summary: Runs the application in development mode
+    cmds:
+      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}

@@ -1,0 +1,154 @@
+# Builds mpckit for Linux, Windows and macOS.
+#   Pull requests and pushes to main: build, vet and test on all three systems; builds kept 14 days as artifacts.
+#   Tags v*: the same, then a draft GitHub release with all builds and SHA256SUMS.txt.
+#            Tags with a hyphen (v1.0.0-beta.1) or a 0.x version (v0.5.5) are marked as pre-releases.
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  APP_NAME: mpckit        # must match APP_NAME in src/Taskfile.yml
+  NODE_VERSION: '22'
+
+defaults:
+  run:
+    shell: bash
+    working-directory: src
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-24.04
+          - platform: windows
+            os: windows-latest
+          - platform: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        working-directory: .
+        run: |
+          sudo apt-get update
+          # Wails v3.1.0 builds against GTK 4 + WebKitGTK 6.0 by default (GTK 3 only with -tags gtk3).
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Install Wails CLI (same version as go.mod)
+        run: |
+          WAILS_VERSION="$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
+          echo "Wails $WAILS_VERSION"
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}"
+
+      - name: Set version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.0.0-dev.${GITHUB_SHA::7}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Version: $VERSION"
+
+      - name: Build
+        run: |
+          case "${{ matrix.platform }}" in
+            linux)   wails3 task linux:build PRODUCTION=true VERSION="$VERSION" ;;
+            windows) wails3 task windows:build PRODUCTION=true VERSION="$VERSION" ;;
+            macos)   wails3 task darwin:package:universal VERSION="$VERSION" ;;
+          esac
+          ls -l bin
+
+      - name: Vet and test
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Check frontend
+        if: runner.os == 'Linux'
+        working-directory: src/frontend
+        run: npm run check --if-present
+
+      - name: Collect release files
+        run: |
+          dist="$RUNNER_TEMP/dist"
+          mkdir -p "$dist"
+          base="${APP_NAME}-${VERSION}"
+          case "${{ matrix.platform }}" in
+            linux)
+              test -f "bin/$APP_NAME" || { echo "bin/$APP_NAME not found"; ls -R bin; exit 1; }
+              tar -czf "$dist/$base-linux-amd64.tar.gz" -C bin "$APP_NAME" ;;
+            windows)
+              test -f "bin/$APP_NAME.exe" || { echo "bin/$APP_NAME.exe not found"; ls -R bin; exit 1; }
+              7z a -tzip "$dist/$base-windows-amd64.zip" "./bin/$APP_NAME.exe" ;;
+            macos)
+              test -d "bin/$APP_NAME.app" || { echo "bin/$APP_NAME.app not found"; ls -R bin; exit 1; }
+              ditto -c -k --keepParent "bin/$APP_NAME.app" "$dist/$base-macos-universal.zip" ;;
+          esac
+          ls -l "$dist"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.APP_NAME }}-${{ matrix.platform }}
+          path: ${{ runner.temp }}/dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Draft release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          flags=(--draft --generate-notes --verify-tag --title "${APP_NAME} ${GITHUB_REF_NAME}")
+          # Pre-release: any hyphenated tag (v1.0.0-beta.1) or any 0.x version (v0.5.5)
+          [[ "$GITHUB_REF_NAME" == *-* || "$GITHUB_REF_NAME" == v0.* ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/* "${flags[@]}"

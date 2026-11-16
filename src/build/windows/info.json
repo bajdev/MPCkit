@@ -1,0 +1,17 @@
+{
+	"fixed": {
+		"file_version": "0.5.5",
+		"product_version": "0.5.5"
+	},
+	"info": {
+		"0409": {
+			"FileVersion": "0.5.5",
+			"ProductVersion": "0.5.5",
+			"CompanyName": "bajdev",
+			"FileDescription": "Desktop kit editor for the MPC Sample",
+			"LegalCopyright": "(c) 2026 bajdev",
+			"ProductName": "MPCkit",
+			"Comments": "Not affiliated with Akai Professional"
+		}
+	}
+}

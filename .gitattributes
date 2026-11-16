@@ -1,0 +1,13 @@
+* text=auto
+
+# Device files and audio: never touch line endings
+*.xpj binary
+*.wav binary
+*.WAV binary
+*.zip binary
+*.png binary
+*.ico binary
+*.icns binary
+
+# Shell scripts keep LF so they run on every system
+*.sh text eol=lf
