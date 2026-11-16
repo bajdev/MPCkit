@@ -502,3 +502,24 @@ func TestExportErrors(t *testing.T) {
 		t.Errorf("failed exports left %v", got)
 	}
 }
+
+func TestTrimSurvivesExport(t *testing.T) {
+	p := buildT1(t)
+	must(t, p.SetTrim(16, 100, 2000))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+	q, _, err := project.Load(path)
+	must(t, err)
+	v, err := q.Pad(16)
+	must(t, err)
+	if v.Start != 100 || v.End != 2000 {
+		t.Errorf("reloaded pad B1: start %d, end %d; want 100 and 2000", v.Start, v.End)
+	}
+	d, err := q.File().Data()
+	must(t, err)
+	n, err := d.Get("tracks[0].program.drum.instruments[16].layersv[0].sliceInfo.LoopStart")
+	must(t, err)
+	if loop, _ := n.Int(); loop != 100 {
+		t.Errorf("reloaded LoopStart %d, want 100", loop)
+	}
+}

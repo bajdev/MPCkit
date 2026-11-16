@@ -150,13 +150,7 @@ func TestRebuildDemo02(t *testing.T) {
 	must(t, p.AssignSample(0, filepath.Join(dir, "Linn 9000 kick.wav")))
 	must(t, p.AssignSample(4, filepath.Join(dir, "Linn 9000 kick001.wav")))
 	must(t, p.SetTune(4, 12, 40))
-	// Start/end trim is a 2.0 feature; its fields are verified, so set them
-	// directly to complete the rebuild.
-	l, err := layer(p.pad(4))
-	must(t, err)
-	must(t, l.Set("sliceInfo.Start", xpj.NewInt(328)))
-	must(t, l.Set("sliceInfo.LoopStart", xpj.NewInt(328)))
-	must(t, l.Set("sliceInfo.End", xpj.NewInt(3777)))
+	must(t, p.SetTrim(4, 328, 3777))
 	must(t, p.SetSequence(0, "Sequence 01", 105, 2))
 	must(t, p.AddSequence(1))
 	must(t, p.SetSequence(1, "Sequence 02", 105, 4))
@@ -683,6 +677,7 @@ func TestFailedEditsChangeNothing(t *testing.T) {
 		{"tune a pad whose layer is not an object", func() error { return p.SetTune(1, 3, 0) }},
 		{"mute group on a pad that is not an object", func() error { return p.SetMuteGroup(20, 2) }},
 		{"sequence whose clip has no value", func() error { return p.SetSequence(seq.Slot, "Renamed", 99, 8) }},
+		{"trim a pad whose sample file is missing", func() error { return p.SetTrim(0, 10, 100) }},
 		{"bad slot", func() error { return p.SetTune(Pads, 0, 0) }},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -733,5 +728,106 @@ func TestAssignReusesFreedName(t *testing.T) {
 	must(t, p.AssignSample(0, writeWAV(t, filepath.Join(dir, "b", "kick.wav"), 20)))
 	if got := p.PoolFiles(); len(got) != 1 || got[0] != "kick.wav" {
 		t.Errorf("pool %q, want [kick.wav]", got)
+	}
+}
+
+// sliceFrames returns a pad's sliceInfo.Start, LoopStart and End, as
+// written in the file.
+func sliceFrames(t *testing.T, p *Project, slot int) [3]int64 {
+	t.Helper()
+	l, err := layer(p.pad(slot))
+	must(t, err)
+	var out [3]int64
+	for i, key := range []string{"Start", "LoopStart", "End"} {
+		n, err := l.Get("sliceInfo." + key)
+		must(t, err)
+		v, err := n.Int()
+		must(t, err)
+		out[i] = v
+	}
+	return out
+}
+
+func TestSetTrim(t *testing.T) {
+	dir := t.TempDir()
+	kick := writeWAV(t, filepath.Join(dir, "kick.wav"), 1000) // frames 0 to 999
+	p := newProject(t)
+	must(t, p.AssignSample(0, kick))
+	p.MarkExported()
+
+	must(t, p.SetTrim(0, 100, 900))
+	if got := sliceFrames(t, p, 0); got != [3]int64{100, 100, 900} {
+		t.Errorf("Start, LoopStart, End = %v, want 100 100 900", got)
+	}
+	if v := padOf(t, p, 0); v.Start != 100 || v.End != 900 || !p.Dirty() {
+		t.Errorf("pad %+v, dirty %v", v, p.Dirty())
+	}
+	// The whole file, and the shortest region, are allowed.
+	must(t, p.SetTrim(0, 0, 999))
+	must(t, p.SetTrim(0, 998, 999))
+}
+
+func TestSetTrimLimits(t *testing.T) {
+	dir := t.TempDir()
+	kick := writeWAV(t, filepath.Join(dir, "kick.wav"), 1000) // frames 0 to 999
+	gone := writeWAV(t, filepath.Join(dir, "gone.wav"), 1000)
+	p := newProject(t)
+	must(t, p.AssignSample(0, kick))
+	must(t, p.AssignSample(1, gone))
+	must(t, os.Remove(gone))
+	p.MarkExported()
+	before := encode(t, p)
+
+	for _, c := range []struct {
+		name       string
+		slot       int
+		start, end int64
+		want       string // in the error
+	}{
+		{"negative start", 0, -1, 500, "start -1 is before the first frame; it can be 0 to 998"},
+		{"start equal to end", 0, 500, 500, "start 500 must be before end 500: at least 2 frames must play"},
+		{"start after end", 0, 600, 500, "start 600 must be before end 500"},
+		{"end past the last frame", 0, 0, 1000, "end 1000 is past the sample's last frame; it can be 1 to 999"},
+		{"empty pad", 5, 0, 10, "pad A6 has no sample"},
+		{"missing source", 1, 0, 10, "gone.wav: the sample file is missing"},
+		{"bad slot", Pads, 0, 10, "out of range"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			err := p.SetTrim(c.slot, c.start, c.end)
+			if err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("got %v, want an error containing %q", err, c.want)
+			}
+			if !bytes.Equal(encode(t, p), before) || p.Dirty() {
+				t.Error("a refused trim changed the project")
+			}
+		})
+	}
+}
+
+func TestTrimTravelsWithPad(t *testing.T) {
+	dir := t.TempDir()
+	kick := writeWAV(t, filepath.Join(dir, "kick.wav"), 1000)
+	snare := writeWAV(t, filepath.Join(dir, "snare.wav"), 600)
+	p := newProject(t)
+	must(t, p.AssignSample(0, kick))
+	must(t, p.SetTrim(0, 100, 900))
+	trimmed := [3]int64{100, 100, 900}
+
+	// Copy, move and swap carry the whole pad, start and end included.
+	must(t, p.CopyPad(0, 1))
+	must(t, p.MovePad(1, 2))
+	must(t, p.SwapPads(2, 3))
+	for _, slot := range []int{0, 3} {
+		if got := sliceFrames(t, p, slot); got != trimmed {
+			t.Errorf("pad %s: %v, want %v", SlotName(slot), got, trimmed)
+		}
+	}
+	// Replace builds the pad afresh: the whole new file plays.
+	must(t, p.AssignSample(3, snare))
+	if got := sliceFrames(t, p, 3); got != [3]int64{0, 0, 599} {
+		t.Errorf("replaced pad: %v, want 0 0 599", got)
+	}
+	if got := sliceFrames(t, p, 0); got != trimmed {
+		t.Errorf("pad A1 after the replace: %v, want %v", got, trimmed)
 	}
 }

@@ -639,8 +639,8 @@ func TestBoundMethods(t *testing.T) {
 		"About", "AddSequence", "AssignSampleDialog", "CancelExport",
 		"ChooseExportFolder", "ChooseZipPath", "ClearPad", "CloseWindow",
 		"CopyPad", "ExportFolder", "ExportZip", "Load", "MovePad", "New",
-		"RemoveSequence", "SetMuteGroup", "SetName", "SetSequence", "SetTune",
-		"State", "SwapPads",
+		"RemoveSequence", "SetMuteGroup", "SetName", "SetSequence", "SetTrim",
+		"SetTune", "State", "SwapPads",
 	}
 	typ := reflect.TypeOf(&Service{})
 	var got []string
@@ -672,5 +672,21 @@ func TestCancelExport(t *testing.T) {
 	}
 	if ents, _ := os.ReadDir(d.folder); len(ents) != 0 {
 		t.Errorf("export after cancel wrote %d entries", len(ents))
+	}
+}
+
+func TestSetTrimThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := hostOf(s).AssignSamplePath(0, filepath.Join(kickDir, "Linn 9000 kick.wav"))
+	must(t, err)
+	st, err := s.SetTrim(0, 328, 3777)
+	must(t, err)
+	if p := st.Pads[0]; p.Start != 328 || p.End != 3777 || !st.Dirty {
+		t.Errorf("pad A1 start %d, end %d, dirty %v", p.Start, p.End, st.Dirty)
+	}
+	// A refused trim still returns the state, unchanged.
+	st, err = s.SetTrim(0, 0, 999999)
+	if err == nil || st.Pads[0].Start != 328 || st.Pads[0].End != 3777 {
+		t.Errorf("refused trim: %v, pad %+v", err, st.Pads[0])
 	}
 }

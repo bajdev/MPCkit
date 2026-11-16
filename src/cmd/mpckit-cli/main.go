@@ -93,6 +93,7 @@ func init() {
 		{"pad", "assign a WAV: `PAD=FILE` (e.g. A1=kick.wav)", parsePadOp},
 		{"tune", "tune a pad: `PAD=SEMITONES,CENTS` (e.g. B1=-24,0)", parseTuneOp},
 		{"mute", "set a pad's mute group: `PAD=GROUP` (0 is off)", parseMuteOp},
+		{"trim", "set where a pad's sample starts and ends, in frames: `PAD=START:END` (e.g. A1=100:2000)", parseTrimOp},
 		{"clear", "clear a pad: `PAD`", parseClearOp},
 		{"copy", "copy pads: `FROM:TO`", parseCopyOp},
 		{"move", "move pads: `FROM:TO`", parseMoveOp},
@@ -155,6 +156,26 @@ func parseMuteOp(arg string) (opFunc, error) {
 		return nil, errors.New("group must be an integer")
 	}
 	return func(p *project.Project) error { return p.SetMuteGroup(slot, group) }, nil
+}
+
+// parseTrimOp reads -trim PAD=START:END. The range is checked against the
+// sample file when the edit runs.
+func parseTrimOp(arg string) (opFunc, error) {
+	label, val, ok := strings.Cut(arg, "=")
+	from, to, ok2 := strings.Cut(val, ":")
+	if !ok || !ok2 {
+		return nil, errors.New("want PAD=START:END")
+	}
+	slot, err := parseSlot(label)
+	if err != nil {
+		return nil, err
+	}
+	start, err1 := strconv.ParseInt(strings.TrimSpace(from), 10, 64)
+	end, err2 := strconv.ParseInt(strings.TrimSpace(to), 10, 64)
+	if err1 != nil || err2 != nil {
+		return nil, errors.New("start and end must be whole numbers of frames")
+	}
+	return func(p *project.Project) error { return p.SetTrim(slot, start, end) }, nil
 }
 
 // parseClearOp reads -clear PAD.
