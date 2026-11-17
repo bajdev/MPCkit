@@ -1,5 +1,15 @@
 # MPCkit
 
+[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/bajdev/MPCkit?include_prereleases&sort=semver)](https://github.com/bajdev/MPCkit/releases)
+[![License: MIT](https://img.shields.io/github/license/bajdev/MPCkit)](LICENSE)
+[![Status: beta](https://img.shields.io/badge/status-beta-orange)](#mpckit)
+
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+[![Go](https://img.shields.io/github/go-mod/go-version/bajdev/MPCkit?filename=src%2Fgo.mod)](src/go.mod)
+[![Wails v3](https://img.shields.io/badge/Wails-v3-df0000)](https://v3.wails.io)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00?logo=svelte&logoColor=white)](https://svelte.dev)
+
 **Build Akai MPC Sample projects on your computer.**
 
 Drop WAV files onto pads, tune them, set mute groups and sequences, then export a project the MPC Sample opens as it is. MPCkit can also open a project saved on the device, so you can change it on a bigger screen and send it back.
@@ -76,8 +86,6 @@ docs/     project file format notes, plans and screenshots
 ```
 
 Pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
 
 ## License and disclaimer
 
