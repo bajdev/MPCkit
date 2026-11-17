@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bajdev/MPCkit/internal/app"
 	"github.com/bajdev/MPCkit/internal/export"
 	"github.com/bajdev/MPCkit/internal/project"
 )
@@ -95,6 +96,7 @@ func init() {
 		{"mute", "set a pad's mute group: `PAD=GROUP` (0 is off)", parseMuteOp},
 		{"trim", "set where a pad's sample starts and ends, in frames: `PAD=START:END` (e.g. A1=100:2000)", parseTrimOp},
 		{"clear", "clear a pad: `PAD`", parseClearOp},
+		{"fill", "fill an empty bank with a folder's WAV files, or one WAV: `BANK=PATH` (e.g. C=kicks)", parseFillOp},
 		{"copy", "copy pads: `FROM:TO`", parseCopyOp},
 		{"move", "move pads: `FROM:TO`", parseMoveOp},
 		{"swap", "swap pads: `FROM:TO`", parseSwapOp},
@@ -176,6 +178,38 @@ func parseTrimOp(arg string) (opFunc, error) {
 		return nil, errors.New("start and end must be whole numbers of frames")
 	}
 	return func(p *project.Project) error { return p.SetTrim(slot, start, end) }, nil
+}
+
+// parseFillOp reads -fill BANK=PATH. PATH is a WAV file or a folder; the
+// bank must be empty. It prints the same message as the window: what was
+// assigned on standard output, files that could not be used on standard
+// error.
+func parseFillOp(arg string) (opFunc, error) {
+	letter, path, ok := strings.Cut(arg, "=")
+	letter = strings.ToUpper(strings.TrimSpace(letter))
+	if !ok || path == "" || len(letter) != 1 || letter[0] < 'A' || letter[0] > 'H' {
+		return nil, errors.New("want BANK=PATH, with BANK A-H")
+	}
+	bank := int(letter[0] - 'A')
+	return func(p *project.Project) error {
+		files, _ := project.GatherWAVs([]string{path})
+		if len(files) == 0 {
+			return app.ErrNoWAVs
+		}
+		res, err := p.FillBank(bank, files)
+		if err != nil {
+			return err
+		}
+		notice, problems := app.FillMessage(bank, res)
+		if notice == "" {
+			return errors.New(problems)
+		}
+		fmt.Println(notice)
+		if problems != "" {
+			fmt.Fprintln(os.Stderr, problems)
+		}
+		return nil
+	}, nil
 }
 
 // parseClearOp reads -clear PAD.

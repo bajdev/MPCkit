@@ -206,11 +206,13 @@
               ui.padSlot = b * PER_BANK;
             }}
             ondragbank={(b) => (ui.padBank = b)}
+            fileDrop
           />
           <SlotGrid cells={padCells} selected={ui.padSlot} onpick={pickPad} dropTarget ondroppad={dropPad} />
           <p class="hint grid-hint">
             Click a pad to select and hear it. Drag a pad to move it, drag onto a filled pad to swap, hold Alt while
-            dragging to copy. Drag over a bank letter to reach another bank. Drop a WAV file on any pad to assign it.
+            dragging to copy. Drag over a bank letter to reach another bank. Drop a WAV file on a pad to assign it, or
+            several files or a folder on an empty bank to fill it.
           </p>
         </section>
         <PadPanel pad={pads[ui.padSlot]} limits={st.limits} />

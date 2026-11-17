@@ -109,6 +109,10 @@ func (p *Project) usage(file string) int {
 // SampleCount returns the number of pool entries.
 func (p *Project) SampleCount() int { return len(p.pool().Items) }
 
+// ErrSampleLimit is AssignSample's error when the project already holds
+// MaxSamples samples and the file would need a new pool entry.
+var ErrSampleLimit = fmt.Errorf("the project already has %d samples, the most the device allows", MaxSamples)
+
 // AssignSample puts the WAV at src on the pad in slot, replacing what was
 // there. A file already in the pool from the same source is reused; a
 // different file with a name already in the pool gets a 001, 002 suffix.
@@ -144,7 +148,7 @@ func (p *Project) AssignSample(slot int, src string) error {
 	newFile := file
 	if file == "" {
 		if p.SampleCount()-len(freed) >= MaxSamples {
-			return fmt.Errorf("the project already has %d samples, the most the device allows", MaxSamples)
+			return ErrSampleLimit
 		}
 		newFile = p.uniqueFile(poolFileName(name), freed)
 	}
