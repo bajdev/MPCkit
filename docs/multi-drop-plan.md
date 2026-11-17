@@ -1,6 +1,6 @@
 # MPCkit drop several WAVs or a folder on an empty bank: work plan
 
-Written 2026-11-17, simplified the same day at bajdev's request. **Not started.** The decisions marked "to confirm" need bajdev's answer before the PR starts. The release version is bajdev's choice and is not set here.
+Written 2026-11-17, simplified the same day at bajdev's request. **Ready to start:** bajdev confirmed every decision below on 2026-11-17. The release version is bajdev's choice and is not set here.
 
 The feature: drag several WAV files, or a folder, from the file manager onto an **empty bank**, and the first 16 fill its pads (C1-C16 for bank C, and so on).
 
@@ -20,7 +20,7 @@ One PR: `feat/bank-drop`.
 
 ## Decisions
 
-Proposed by the plan, **to confirm with bajdev before the PR starts**:
+Settled with bajdev on 2026-11-17. Agents follow them and do not reopen them:
 
 | # | Topic | Proposal |
 | --- | --- | --- |
