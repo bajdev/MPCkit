@@ -33,6 +33,7 @@ export const ui = $state({
   aboutOpen: false,
   confirm: null as Confirm | null,
   picker: null as Picker | null,
+  trim: null as number | null, // slot whose start/end dialog is open
 });
 
 export function message(e: unknown): string {
@@ -77,6 +78,7 @@ async function discardOK(): Promise<boolean> {
 
 function resetSelection() {
   ui.padBank = ui.padSlot = ui.seqBank = ui.seqSlot = 0;
+  ui.trim = null; // its pad belongs to the old project
 }
 
 /** Starts a new, empty project. */

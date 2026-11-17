@@ -146,6 +146,9 @@
         <button type="button" class="btn secondary" onclick={() => (ui.picker = { kind: "copy", from: pad.slot })}
           >Copy to pad</button
         >
+        <button type="button" class="btn secondary" disabled={pad.missing} onclick={() => (ui.trim = pad.slot)}
+          >Start/End</button
+        >
       </div>
       {#if pad.hasNotes}
         <p class="hint notes">
