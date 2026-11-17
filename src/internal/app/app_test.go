@@ -639,8 +639,8 @@ func TestBoundMethods(t *testing.T) {
 		"About", "AddSequence", "AssignSampleDialog", "CancelExport",
 		"ChooseExportFolder", "ChooseZipPath", "ClearPad", "CloseWindow",
 		"CopyPad", "ExportFolder", "ExportZip", "Load", "MovePad", "New",
-		"RemoveSequence", "SetMuteGroup", "SetName", "SetSequence", "SetTrim",
-		"SetTune", "State", "SwapPads",
+		"RemoveSequence", "RenameSample", "SetMuteGroup", "SetName", "SetSequence",
+		"SetTrim", "SetTune", "State", "SwapPads",
 	}
 	typ := reflect.TypeOf(&Service{})
 	var got []string
@@ -688,5 +688,32 @@ func TestSetTrimThroughService(t *testing.T) {
 	st, err = s.SetTrim(0, 0, 999999)
 	if err == nil || st.Pads[0].Start != 328 || st.Pads[0].End != 3777 {
 		t.Errorf("refused trim: %v, pad %+v", err, st.Pads[0])
+	}
+}
+
+func TestRenameSampleThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := hostOf(s).AssignSamplePath(0, filepath.Join(kickDir, "Linn 9000 kick.wav"))
+	must(t, err)
+	st, err := s.CopyPad(0, 17)
+	must(t, err)
+	if got := st.Pads[0].SharedWith; len(got) != 1 || got[0] != "B2" {
+		t.Errorf("A1 sharedWith %q, want [B2]", got)
+	}
+	if got := st.Pads[1].SharedWith; got == nil || len(got) != 0 {
+		t.Errorf("empty pad sharedWith %#v, want an empty list", got)
+	}
+	st, err = s.RenameSample(17, "Big kick")
+	must(t, err)
+	if st.Pads[0].File != "Big kick.wav" || st.Pads[17].Name != "Big kick" || !st.Dirty {
+		t.Errorf("A1 %q, B2 %q, dirty %v", st.Pads[0].File, st.Pads[17].Name, st.Dirty)
+	}
+	if got := st.Pads[17].SharedWith; len(got) != 1 || got[0] != "A1" {
+		t.Errorf("B2 sharedWith %q, want [A1]", got)
+	}
+	// A refused name still returns the state, unchanged.
+	st, err = s.RenameSample(0, "big?kick")
+	if err == nil || st.Pads[0].File != "Big kick.wav" {
+		t.Errorf("refused rename: %v, A1 %q", err, st.Pads[0].File)
 	}
 }

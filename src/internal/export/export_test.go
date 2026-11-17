@@ -523,3 +523,35 @@ func TestTrimSurvivesExport(t *testing.T) {
 		t.Errorf("reloaded LoopStart %d, want 100", loop)
 	}
 }
+
+func TestRenameSurvivesExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "Demo02.xpj"))
+	must(t, err)
+	src, ok := p.Source("Linn 9000 kick.wav")
+	if !ok {
+		t.Fatal("no source for Linn 9000 kick.wav")
+	}
+	info, err := os.Stat(src)
+	must(t, err)
+	srcBytes := readFile(t, src)
+
+	must(t, p.RenameSample(0, "Big kick"))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+
+	got := listDir(t, filepath.Join(filepath.Dir(path), "Demo02"+project.DataSuffix))
+	if strings.Join(got, "|") != "Big kick.wav|Linn 9000 kick001.wav" {
+		t.Errorf("data folder holds %v", got)
+	}
+	q, _, err := project.Load(path)
+	must(t, err)
+	if v, err := q.Pad(0); err != nil || v.File != "Big kick.wav" || v.SampleName != "Big kick" {
+		t.Errorf("reloaded A1 %+v, %v", v, err)
+	}
+	// The source file is read, never written, renamed or moved.
+	after, err := os.Stat(src)
+	must(t, err)
+	if !bytes.Equal(readFile(t, src), srcBytes) || !after.ModTime().Equal(info.ModTime()) || after.Name() != "Linn 9000 kick.wav" {
+		t.Error("the source file changed")
+	}
+}

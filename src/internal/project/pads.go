@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/bajdev/MPCkit/internal/wav"
 	"github.com/bajdev/MPCkit/internal/xpj"
@@ -463,6 +464,95 @@ func (p *Project) SetTrim(slot int, start, end int64) error {
 	}
 	p.dirty = true
 	return nil
+}
+
+// MaxFileName is the longest sample file name RenameSample accepts, in
+// characters, extension included (docs/rename-samples-plan.md, decision 7).
+const MaxFileName = 50
+
+// RenameSample gives the sample on the pad in slot a new file name: the
+// name the copy gets in exported projects. name is typed without the
+// extension, which stays as it is. Every pad and layer using the file gets
+// the new name, and the pool entry's name follows it (decisions 1 to 3).
+// A name another sample has is numbered, as at assign (decision 5). The
+// source file on disk is never touched.
+func (p *Project) RenameSample(slot int, name string) error {
+	if err := checkSlot(slot); err != nil {
+		return err
+	}
+	l, err := layer(p.pad(slot))
+	if err != nil {
+		return err
+	}
+	old := text(l.Lookup("sampleFile"))
+	if old == "" {
+		return fmt.Errorf("pad %s has no sample", SlotName(slot))
+	}
+	name = strings.TrimSpace(name)
+	if err := ValidName(name); err != nil {
+		return fmt.Errorf("sample name: %w", err)
+	}
+	file := name + filepath.Ext(old)
+	if n := utf8.RuneCountInString(file); n > MaxFileName {
+		return fmt.Errorf("sample name: %s is %d characters; a file name can have at most %d, %s included",
+			file, n, MaxFileName, filepath.Ext(old))
+	}
+	if file == old {
+		return nil
+	}
+	// Leave the sample's own entry out, so that changing only the case of
+	// its name does not number it.
+	file = p.uniqueFile(file, map[string]bool{old: true})
+
+	// Everything that names the file: both pool lists, and every layer of
+	// every pad that uses it. These are objects (checked by fromFile), so
+	// setting their keys cannot fail.
+	var e setter
+	for _, list := range []*xpj.Node{p.pool(), p.trackPool()} {
+		for _, entry := range list.Items {
+			if text(entry.Lookup("path")) == old {
+				e.set(entry, "name", xpj.NewString(stem(file)))
+				e.set(entry, "path", xpj.NewString(file))
+			}
+		}
+	}
+	for _, pad := range p.pads().Items {
+		layers := pad.Lookup("layersv")
+		if layers == nil {
+			continue
+		}
+		for _, l := range layers.Items {
+			if text(l.Lookup("sampleFile")) == old {
+				e.set(l, "sampleName", xpj.NewString(stem(file)))
+				e.set(l, "sampleFile", xpj.NewString(file))
+			}
+		}
+	}
+	if e.err != nil {
+		return e.err
+	}
+	if src, ok := p.sources[old]; ok {
+		delete(p.sources, old)
+		p.sources[file] = src
+	}
+	p.dirty = true
+	return nil
+}
+
+// FileUsers maps each pool file to the slots of the pads using it, on any
+// layer, in slot order.
+func (p *Project) FileUsers() map[string][]int {
+	users := map[string][]int{}
+	for slot, pad := range p.pads().Items {
+		seen := map[string]bool{}
+		for _, f := range padFiles(pad) {
+			if !seen[f] {
+				seen[f] = true
+				users[f] = append(users[f], slot)
+			}
+		}
+	}
+	return users
 }
 
 // SetMuteGroup sets the pad's mute group; 0 is off.

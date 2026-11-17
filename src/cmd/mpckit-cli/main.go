@@ -96,6 +96,7 @@ func init() {
 		{"mute", "set a pad's mute group: `PAD=GROUP` (0 is off)", parseMuteOp},
 		{"trim", "set where a pad's sample starts and ends, in frames: `PAD=START:END` (e.g. A1=100:2000)", parseTrimOp},
 		{"clear", "clear a pad: `PAD`", parseClearOp},
+		{"rename", "rename a pad's sample in exports, without .wav: `PAD=NAME` (e.g. A1=Big kick)", parseRenameOp},
 		{"fill", "fill an empty bank with a folder's WAV files, or one WAV: `BANK=PATH` (e.g. C=kicks)", parseFillOp},
 		{"copy", "copy pads: `FROM:TO`", parseCopyOp},
 		{"move", "move pads: `FROM:TO`", parseMoveOp},
@@ -210,6 +211,20 @@ func parseFillOp(arg string) (opFunc, error) {
 		}
 		return nil
 	}, nil
+}
+
+// parseRenameOp reads -rename PAD=NAME. NAME is the new file name without
+// its extension; the file on disk keeps its own name.
+func parseRenameOp(arg string) (opFunc, error) {
+	label, name, ok := strings.Cut(arg, "=")
+	if !ok {
+		return nil, errors.New("want PAD=NAME")
+	}
+	slot, err := parseSlot(label)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.RenameSample(slot, name) }, nil
 }
 
 // parseClearOp reads -clear PAD.

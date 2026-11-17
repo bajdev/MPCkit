@@ -137,6 +137,15 @@ export function RemoveSequence(slot: number): $CancellablePromise<$models.State>
 }
 
 /**
+ * RenameSample gives a pad's sample a new file name, typed without the
+ * extension. Every pad using the file gets it; the file on disk keeps its
+ * own name.
+ */
+export function RenameSample(slot: number, name: string): $CancellablePromise<$models.State> {
+    return $Call.ByID(1709048904, slot, name);
+}
+
+/**
  * SetMuteGroup sets a pad's mute group; 0 is off.
  */
 export function SetMuteGroup(slot: number, group: number): $CancellablePromise<$models.State> {
