@@ -147,7 +147,7 @@
   async function pickPad(slot: number) {
     ui.padSlot = slot;
     const p = pads[slot];
-    if (p?.audio) {
+    if (ui.playOnClick && p?.audio) {
       try {
         await play(p);
       } catch (e) {
@@ -244,7 +244,19 @@
       <div id="view-pads" class="panels" role="tabpanel" aria-labelledby="tab-pads">
         <section class="panel grid-panel" aria-label="Pads">
           <div class="grid-head">
-            <h2 class="eyebrow">Pad bank</h2>
+            <div class="head-start">
+              <h2 class="eyebrow">Pad bank</h2>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                aria-checked={ui.playOnClick}
+                onclick={() => (ui.playOnClick = !ui.playOnClick)}
+              >
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                Play on click
+              </button>
+            </div>
             <div class="head-end">
               <span class="mono summary">Bank {BANKS[ui.padBank]} · {padCounts[ui.padBank]} of 16 filled</span>
               <button type="button" class="head-btn" disabled={padCounts[ui.padBank] === 0} onclick={clearPadBank}
@@ -265,9 +277,9 @@
           />
           <SlotGrid cells={padCells} selected={ui.padSlot} onpick={pickPad} dropTarget ondroppad={dropPad} />
           <p class="hint grid-hint">
-            Click a pad to select and hear it. Drag a pad to move it, drag onto a filled pad to swap, hold Alt while
-            dragging to copy. Drag over a bank letter to reach another bank. Drop a WAV file on a pad to assign it, or
-            several files or a folder on an empty bank to fill it.
+            {ui.playOnClick ? "Click a pad to select and hear it." : "Click a pad to select it."} Drag a pad to move it, drag
+            onto a filled pad to swap, hold Alt while dragging to copy. Drag over a bank letter to reach another bank. Drop
+            a WAV file on a pad to assign it, or several files or a folder on an empty bank to fill it.
           </p>
         </section>
         <PadPanel pad={pads[ui.padSlot]} limits={st.limits} />
@@ -428,6 +440,54 @@
   .summary {
     font-size: 12px;
     color: var(--muted);
+  }
+  .head-start {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  /* "Play on click": as small as Clear bank, so the row is no taller. */
+  .switch {
+    margin: -4px 0;
+    padding: 3px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 0;
+    color: var(--soft);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .switch:hover {
+    color: var(--text);
+  }
+  .track {
+    position: relative;
+    width: 26px;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--raised);
+    border: 1px solid var(--edge);
+  }
+  .thumb {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: left 0.1s;
+  }
+  .switch[aria-checked="true"] .track {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .switch[aria-checked="true"] .thumb {
+    left: 13px;
+    background: var(--on-accent);
   }
   .head-end {
     display: flex;
