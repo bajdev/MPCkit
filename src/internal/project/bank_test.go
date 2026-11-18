@@ -41,8 +41,10 @@ func TestClearBank(t *testing.T) {
 	if got := poolNames(t, p); !slices.Equal(got, [][2]string{{"d", "d.wav"}, {"d", "d.wav"}}) {
 		t.Errorf("pool entries %q, want only d.wav in both lists", got)
 	}
-	if got := fmt.Sprint(p.sources); got != fmt.Sprintf("map[d.wav:%s]", filepath.Join(dir, "d.wav")) {
-		t.Errorf("sources %s", got)
+	// Sources are stored resolved (macOS /private/var, Windows short names),
+	// so compare file names.
+	if src, ok := p.Source("d.wav"); len(p.sources) != 1 || !ok || filepath.Base(src) != "d.wav" {
+		t.Errorf("sources %v, want only d.wav", p.sources)
 	}
 	if !p.Dirty() {
 		t.Error("not marked changed")
