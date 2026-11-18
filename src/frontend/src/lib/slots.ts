@@ -37,3 +37,15 @@ export function signed(n: number): string {
 export function bars(n: number): string {
   return n + (n === 1 ? " bar" : " bars");
 }
+
+/** "A3", "A3 and B7", "A3, A4 and B7". */
+export function listText(items: string[]): string {
+  if (items.length < 2) return items.join("");
+  return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+}
+
+/** A file name split into its name and extension (with the dot), as Go's filepath.Ext. */
+export function splitExt(file: string): [string, string] {
+  const dot = file.lastIndexOf(".");
+  return dot < 0 ? [file, ""] : [file.slice(0, dot), file.slice(dot)];
+}

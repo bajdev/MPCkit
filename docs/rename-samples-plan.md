@@ -38,7 +38,7 @@ Settled with bajdev on 2026-11-17. Decisions 5, 7 and 10 were changed from the f
 
 Out of scope: renaming files on the user's disk, separate names per pad for one shared file, renaming several samples at once, and renaming the project (already in the window).
 
-Still to settle before PR N2 (not needed for N1): with no dialog and no spare height, where Pad settings shows "Also used by A3 and B7" (decision 1) and a refused name's message. The error banner, where other refused edits show, is one option for the message.
+Settled for PR N2 (bajdev, 2026-11-17): with no dialog and no spare height, "Also used by A3 and B7" (decision 1) goes in the name field's tooltip, and a refused name's message in the error banner, where other refused edits show.
 
 ## Guidelines for agents
 
@@ -100,7 +100,7 @@ In both exports, pads A1 and A2 point at `Big kick.wav`, the data folder holds o
 
 ### PR N2: `feat/rename-sample-window`
 
-Rewritten on 2026-11-17 for decision 10: a field in Pad settings, no dialog. The two points under "Still to settle" are settled before this PR starts.
+Rewritten on 2026-11-17 for decision 10: a field in Pad settings, no dialog. The two points that were still to settle are settled above: the tooltip and the error banner.
 
 - [ ] In Pad settings, when the pad holds a sample, the file name shown today becomes a text field holding the name without its extension, with the extension shown after it as plain text and a **Rename** button beside it (decision 10). It must not make the panel taller: check at 960, 1280 and 1440 px wide with a long file name.
   - **Rename** calls `Service.RenameSample` through `run()`. Enter in the field does the same. Escape puts the current name back.
