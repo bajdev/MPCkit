@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -553,5 +554,33 @@ func TestRenameSurvivesExport(t *testing.T) {
 	must(t, err)
 	if !bytes.Equal(readFile(t, src), srcBytes) || !after.ModTime().Equal(info.ModTime()) || after.Name() != "Linn 9000 kick.wav" {
 		t.Error("the source file changed")
+	}
+}
+
+// A project with bank A cleared and its sequences removed loads back as it
+// was exported.
+func TestClearedBankSurvivesExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "DemoFile.xpj"))
+	must(t, err)
+	must(t, p.ClearBank(0))
+	must(t, p.RemoveSequenceBank(0))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+	q, _, err := project.Load(path)
+	must(t, err)
+	for slot := 0; slot < project.Pads; slot++ {
+		a, err := p.Pad(slot)
+		must(t, err)
+		b, err := q.Pad(slot)
+		must(t, err)
+		if a != b {
+			t.Errorf("pad %d reloaded as %+v, want %+v", slot, b, a)
+		}
+	}
+	if a, b := fmt.Sprint(p.Sequences()), fmt.Sprint(q.Sequences()); a != b {
+		t.Errorf("sequences reloaded as %s, want %s", b, a)
+	}
+	if a, b := p.PoolFiles(), q.PoolFiles(); !slices.Equal(a, b) {
+		t.Errorf("pool reloaded as %q, want %q", b, a)
 	}
 }

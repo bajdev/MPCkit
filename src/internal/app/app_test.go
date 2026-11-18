@@ -637,10 +637,10 @@ func TestLinkedFileIsMissing(t *testing.T) {
 func TestBoundMethods(t *testing.T) {
 	want := []string{
 		"About", "AddSequence", "AssignSampleDialog", "CancelExport",
-		"ChooseExportFolder", "ChooseZipPath", "ClearPad", "CloseWindow",
+		"ChooseExportFolder", "ChooseZipPath", "ClearBank", "ClearPad", "CloseWindow",
 		"CopyPad", "ExportFolder", "ExportZip", "Load", "MovePad", "New",
-		"RemoveSequence", "RenameSample", "SetMuteGroup", "SetName", "SetSequence",
-		"SetTrim", "SetTune", "State", "SwapPads",
+		"RemoveSequence", "RemoveSequenceBank", "RenameSample", "SetMuteGroup", "SetName",
+		"SetSequence", "SetTrim", "SetTune", "State", "SwapPads",
 	}
 	typ := reflect.TypeOf(&Service{})
 	var got []string
@@ -715,5 +715,45 @@ func TestRenameSampleThroughService(t *testing.T) {
 	st, err = s.RenameSample(0, "big?kick")
 	if err == nil || st.Pads[0].File != "Big kick.wav" {
 		t.Errorf("refused rename: %v, A1 %q", err, st.Pads[0].File)
+	}
+}
+
+func TestClearBankThroughService(t *testing.T) {
+	s, _ := newService()
+	kick := filepath.Join(kickDir, "Linn 9000 kick.wav")
+	for _, slot := range []int{0, 5, 16} {
+		_, err := hostOf(s).AssignSamplePath(slot, kick)
+		must(t, err)
+	}
+	st, err := s.ClearBank(0)
+	must(t, err)
+	if st.Pads[0].File != "" || st.Pads[5].File != "" || st.Pads[16].File == "" || st.SampleCount != 1 {
+		t.Errorf("A1 %q, A6 %q, B1 %q, %d samples", st.Pads[0].File, st.Pads[5].File, st.Pads[16].File, st.SampleCount)
+	}
+	// A bad bank still returns the state, unchanged.
+	st, err = s.ClearBank(8)
+	if err == nil || st.Pads[16].File == "" {
+		t.Errorf("bank 8: %v", err)
+	}
+}
+
+func TestRemoveSequenceBankThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := s.AddSequence(20)
+	must(t, err)
+	st, err := s.RemoveSequenceBank(0)
+	must(t, err)
+	if st.SequenceCount != 1 || st.Sequences[0].Slot != 20 {
+		t.Errorf("bank A: %+v", st.Sequences)
+	}
+	// Bank B now holds the only sequence: a fresh one is left in B1.
+	st, err = s.RemoveSequenceBank(1)
+	must(t, err)
+	if st.SequenceCount != 1 || st.Sequences[0] != (Sequence{Slot: 16, Label: "B1", Name: "Sequence 17", BPM: 120, Bars: 2}) {
+		t.Errorf("bank B: %+v", st.Sequences)
+	}
+	st, err = s.RemoveSequenceBank(-1)
+	if err == nil || st.SequenceCount != 1 {
+		t.Errorf("bank -1: %v", err)
 	}
 }

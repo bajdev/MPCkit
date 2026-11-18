@@ -67,6 +67,13 @@ export function ChooseZipPath(): $CancellablePromise<string> {
 }
 
 /**
+ * ClearBank clears every pad of bank (0 for A to 7 for H).
+ */
+export function ClearBank(bank: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(292002447, bank);
+}
+
+/**
  * ClearPad empties the pad in slot.
  */
 export function ClearPad(slot: number): $CancellablePromise<$models.State> {
@@ -134,6 +141,14 @@ export function New(): $CancellablePromise<$models.State> {
  */
 export function RemoveSequence(slot: number): $CancellablePromise<$models.State> {
     return $Call.ByID(1152874213, slot);
+}
+
+/**
+ * RemoveSequenceBank removes every sequence of bank (0 for A to 7 for H). If
+ * the bank held them all, one fresh sequence is left in its first slot.
+ */
+export function RemoveSequenceBank(bank: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(2688849815, bank);
 }
 
 /**

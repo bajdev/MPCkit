@@ -103,6 +103,8 @@ func init() {
 		{"swap", "swap pads: `FROM:TO`", parseSwapOp},
 		{"seq", "set a sequence, adding it if needed: `N=NAME,BPM,BARS` (N is 1-128)", parseSeqOp},
 		{"rmseq", "remove a sequence: `N`", parseRmseqOp},
+		{"clearbank", "clear every pad of a bank: `BANK` (A-H)", parseClearBankOp},
+		{"rmseqbank", "remove every sequence of a bank, keeping one if it held them all: `BANK` (A-H)", parseRmseqBankOp},
 	} {
 		addOp(f.name, f.usage, f.parse)
 	}
@@ -187,11 +189,10 @@ func parseTrimOp(arg string) (opFunc, error) {
 // error.
 func parseFillOp(arg string) (opFunc, error) {
 	letter, path, ok := strings.Cut(arg, "=")
-	letter = strings.ToUpper(strings.TrimSpace(letter))
-	if !ok || path == "" || len(letter) != 1 || letter[0] < 'A' || letter[0] > 'H' {
+	bank, err := parseBank(letter)
+	if !ok || path == "" || err != nil {
 		return nil, errors.New("want BANK=PATH, with BANK A-H")
 	}
-	bank := int(letter[0] - 'A')
 	return func(p *project.Project) error {
 		files, _ := project.GatherWAVs([]string{path})
 		if len(files) == 0 {
@@ -308,6 +309,33 @@ func parseRmseqOp(arg string) (opFunc, error) {
 		return nil, err
 	}
 	return func(p *project.Project) error { return p.RemoveSequence(slot) }, nil
+}
+
+// parseBank reads a bank letter, A-H, as 0-7.
+func parseBank(arg string) (int, error) {
+	letter := strings.ToUpper(strings.TrimSpace(arg))
+	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'H' {
+		return 0, fmt.Errorf("bad bank %q: want A-H", arg)
+	}
+	return int(letter[0] - 'A'), nil
+}
+
+// parseClearBankOp reads -clearbank BANK.
+func parseClearBankOp(arg string) (opFunc, error) {
+	bank, err := parseBank(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.ClearBank(bank) }, nil
+}
+
+// parseRmseqBankOp reads -rmseqbank BANK.
+func parseRmseqBankOp(arg string) (opFunc, error) {
+	bank, err := parseBank(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.RemoveSequenceBank(bank) }, nil
 }
 
 func main() {

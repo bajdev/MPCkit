@@ -166,8 +166,8 @@ func (e *BankNotEmptyError) Error() string {
 // counted in LeftOut.
 func (p *Project) FillBank(bank int, files []string) (FillResult, error) {
 	var res FillResult
-	if bank < 0 || bank >= Pads/PadsPerBank {
-		return res, fmt.Errorf("bank %d out of range 0-%d", bank, Pads/PadsPerBank-1)
+	if err := checkBank(bank); err != nil {
+		return res, err
 	}
 	first := bank * PadsPerBank
 	for slot := first; slot < first+PadsPerBank; slot++ {

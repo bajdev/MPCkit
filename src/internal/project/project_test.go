@@ -680,6 +680,9 @@ func TestFailedEditsChangeNothing(t *testing.T) {
 		{"trim a pad whose sample file is missing", func() error { return p.SetTrim(0, 10, 100) }},
 		{"rename to a name with ?", func() error { return p.RenameSample(0, "big?kick") }},
 		{"bad slot", func() error { return p.SetTune(Pads, 0, 0) }},
+		{"clear bank 8", func() error { return p.ClearBank(8) }},
+		{"clear bank -1", func() error { return p.ClearBank(-1) }},
+		{"remove sequences of bank 8", func() error { return p.RemoveSequenceBank(8) }},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			if err := c.edit(); err == nil {
