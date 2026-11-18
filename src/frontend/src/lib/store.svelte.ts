@@ -34,6 +34,7 @@ export const ui = $state({
   aboutOpen: false,
   confirm: null as Confirm | null,
   picker: null as Picker | null,
+  playOnClick: true, // "Play on click" on the Pads tab; on at every start
 });
 
 export function message(e: unknown): string {

@@ -59,7 +59,7 @@
     const slot = pad.slot;
     if (await run(() => Service.SetTune(slot, coarse, fine))) {
       const p = app.state?.pads?.[slot];
-      if (p) preview(p); // hear the new tuning
+      if (p && ui.playOnClick) preview(p); // hear the new tuning
     }
   }
 </script>
