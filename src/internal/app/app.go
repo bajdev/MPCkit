@@ -17,7 +17,7 @@ import (
 )
 
 // Version and Commit are set by production builds (Taskfile.yml) with
-// -ldflags "-X github.com/bajdev/MPCkit/internal/app.Version=0.5.5
+// -ldflags "-X github.com/bajdev/MPCkit/internal/app.Version=0.5.6
 // -X github.com/bajdev/MPCkit/internal/app.Commit=2354f57".
 var (
 	Version = "dev"
