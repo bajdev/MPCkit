@@ -22,7 +22,8 @@ Drop WAV files onto pads, tune them, set mute groups and sequences, then export 
 
 ## Features
 
-- **Pads and banks.** All 128 pads, in eight banks of 16. Drop a WAV file on a pad to assign it, or several files or a folder on an empty bank to fill it. Click a pad to hear it, and drag pads to move, swap or copy them.
+- **Pads and banks.** All 128 pads, in eight banks of 16. Drop a WAV file on a pad to assign it, or drop several files or a folder on an empty bank to fill its 16 pads, in name order. Click a pad to hear it, and drag pads to move, swap or copy them.
+- **Sample names.** Rename a pad's sample in Pad settings to give it a clearer name on the device. Only the copy in the exported project gets the new name; your original file is never changed.
 - **Tuning and mute groups.** Tune each pad by up to 24 semitones and 90 cents either way. Put pads in mute groups so they cut each other off, as on the device.
 - **Sequences.** Up to 128 sequences, each with a name, a tempo (20–999 BPM) and a length in bars. You record the notes on the device.
 - **Open and export.** Open a project saved on the device, change it, and export it to a folder (for example straight onto the card) or to a zip.
