@@ -362,6 +362,11 @@ func (s *Service) ClearPad(slot int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.ClearPad(slot) })
 }
 
+// ClearBank clears every pad of bank (0 for A to 7 for H).
+func (s *Service) ClearBank(bank int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.ClearBank(bank) })
+}
+
 // SetTune sets a pad's tuning in semitones and cents.
 func (s *Service) SetTune(slot, coarse, fine int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.SetTune(slot, coarse, fine) })
@@ -519,6 +524,12 @@ func (s *Service) AddSequence(slot int) (State, error) {
 // sequence cannot be removed.
 func (s *Service) RemoveSequence(slot int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.RemoveSequence(slot) })
+}
+
+// RemoveSequenceBank removes every sequence of bank (0 for A to 7 for H). If
+// the bank held them all, one fresh sequence is left in its first slot.
+func (s *Service) RemoveSequenceBank(bank int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.RemoveSequenceBank(bank) })
 }
 
 // SetSequence sets a sequence's name, BPM and length in bars. Notes past a

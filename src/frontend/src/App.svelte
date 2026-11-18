@@ -12,6 +12,7 @@
   import SlotGrid, { type Cell } from "./lib/SlotGrid.svelte";
   import {
     app,
+    confirm,
     exportFolder,
     exportZip,
     listen,
@@ -23,7 +24,7 @@
     ui,
     type Tab,
   } from "./lib/store.svelte";
-  import { BANKS, PER_BANK, bars, gridSlots, tuneText } from "./lib/slots";
+  import { BANKS, PER_BANK, bars, gridSlots, listText, tuneText } from "./lib/slots";
 
   onMount(() => {
     refresh();
@@ -92,6 +93,55 @@
         })
       : [],
   );
+
+  function bankSlots(bank: number): number[] {
+    return Array.from({ length: PER_BANK }, (_, i) => bank * PER_BANK + i);
+  }
+
+  // Clear bank on the Pads tab: asks first, listing the pads. The selected
+  // pad stays selected, now empty.
+  async function clearPadBank() {
+    const bank = ui.padBank;
+    const filled = bankSlots(bank)
+      .map((s) => pads[s])
+      .filter((p) => p.file !== "");
+    const noted = filled.filter((p) => p.hasNotes).map((p) => p.label);
+    const ok = await confirm({
+      title: `Clear bank ${BANKS[bank]}?`,
+      message:
+        "These pads will be emptied. There is no undo." +
+        (noted.length
+          ? ` Sequences have recorded notes for ${listText(noted)}. The notes stay, and play nothing until ${noted.length === 1 ? "that pad is" : "those pads are"} filled again.`
+          : ""),
+      items: filled.map((p) => `${p.label} ${p.name}`),
+      action: "Clear",
+    });
+    if (ok) await run(() => Service.ClearBank(bank));
+  }
+
+  // Clear bank on the Sequences tab: asks first, listing the sequences. A
+  // project keeps one sequence, so Go adds a fresh one if the bank held them all.
+  async function clearSeqBank() {
+    const bank = ui.seqBank;
+    const seqs = bankSlots(bank).flatMap((s) => seqBySlot.get(s) ?? []);
+    const noted = seqs.filter((q) => q.hasNotes).map((q) => pads[q.slot].label);
+    const first = bank * PER_BANK;
+    const fresh = seqs.length === (st?.sequenceCount ?? 0);
+    const ok = await confirm({
+      title: `Clear bank ${BANKS[bank]}?`,
+      message:
+        "These sequences will be removed. There is no undo." +
+        (noted.length
+          ? ` ${listText(noted)} ${noted.length === 1 ? "has" : "have"} recorded notes, which will be deleted too.`
+          : "") +
+        (fresh
+          ? ` A project needs one sequence, so an empty Sequence ${String(first + 1).padStart(2, "0")} is added in ${pads[first].label}.`
+          : ""),
+      items: seqs.map((q) => `${pads[q.slot].label} ${q.name}`),
+      action: "Clear",
+    });
+    if (ok) await run(() => Service.RemoveSequenceBank(bank));
+  }
 
   // Clicking a pad selects it and, if it has a sample, plays it.
   async function pickPad(slot: number) {
@@ -195,7 +245,12 @@
         <section class="panel grid-panel" aria-label="Pads">
           <div class="grid-head">
             <h2 class="eyebrow">Pad bank</h2>
-            <span class="mono summary">Bank {BANKS[ui.padBank]} · {padCounts[ui.padBank]} of 16 filled</span>
+            <div class="head-end">
+              <span class="mono summary">Bank {BANKS[ui.padBank]} · {padCounts[ui.padBank]} of 16 filled</span>
+              <button type="button" class="head-btn" disabled={padCounts[ui.padBank] === 0} onclick={clearPadBank}
+                >Clear bank</button
+              >
+            </div>
           </div>
           <BankBar
             bank={ui.padBank}
@@ -222,7 +277,12 @@
         <section class="panel grid-panel" aria-label="Sequence slots">
           <div class="grid-head">
             <h2 class="eyebrow">Sequence bank</h2>
-            <span class="mono summary">Bank {BANKS[ui.seqBank]} · {seqCounts[ui.seqBank]} of 16 used</span>
+            <div class="head-end">
+              <span class="mono summary">Bank {BANKS[ui.seqBank]} · {seqCounts[ui.seqBank]} of 16 used</span>
+              <button type="button" class="head-btn" disabled={seqCounts[ui.seqBank] === 0} onclick={clearSeqBank}
+                >Clear bank</button
+              >
+            </div>
           </div>
           <BankBar
             bank={ui.seqBank}
@@ -368,6 +428,32 @@
   .summary {
     font-size: 12px;
     color: var(--muted);
+  }
+  .head-end {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  /* Small, so the header row is no taller: the negative margin gives back
+     what the padding and border add. */
+  .head-btn {
+    margin: -4px 0;
+    padding: 3px 8px;
+    background: var(--raised);
+    color: var(--soft);
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .head-btn:hover:not(:disabled) {
+    color: var(--text);
+  }
+  .head-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   footer {
     flex: none;

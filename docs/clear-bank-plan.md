@@ -1,6 +1,6 @@
 # MPCkit clear a whole bank: work plan
 
-Written 2026-11-17. **Not started.** The decisions marked "to confirm" need bajdev's answer before the PR starts. The release version is bajdev's choice and is not set here.
+Written 2026-11-17. **Going ahead** (bajdev, 2026-11-18): all eight decisions below are confirmed as proposed. The release version is bajdev's choice and is not set here.
 
 The feature: one button that clears every pad in the bank shown on the Pads tab, and one that removes every sequence in the bank shown on the Sequences tab. Both ask first.
 
@@ -16,7 +16,7 @@ One PR: `feat/clear-bank`.
 
 ## Decisions
 
-Proposed by the plan, **to confirm with bajdev before the PR starts**:
+Confirmed by bajdev on 2026-11-18, as proposed. Agents follow them and do not reopen them:
 
 | # | Topic | Proposal |
 | --- | --- | --- |
