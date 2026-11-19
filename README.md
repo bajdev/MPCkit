@@ -18,7 +18,7 @@ Drop WAV files onto pads, tune them, set mute groups and sequences, then export 
 
 > **Beta.** MPCkit is in testing (version 0.5). Expect a few rough edges, and keep a copy of any project you care about before opening it in MPCkit.
 
-![The MPCkit window on the Pads tab: bank A with ten drum samples, and the settings for pad A1 on the right](docs/images/pads.png)
+![The MPCkit window on the Pads tab: bank A with ten drum samples, the Play on click switch and Clear bank above them, and the settings for pad A1 on the right, starting with its sample name, ready to rename](docs/images/pads.png)
 
 ## Features
 
@@ -29,7 +29,7 @@ Drop WAV files onto pads, tune them, set mute groups and sequences, then export 
 - **Open and export.** Open a project saved on the device, change it, and export it to a folder (for example straight onto the card) or to a zip.
 - **Small, native and offline.** One small app for Windows, macOS and Linux. No installer, no account and no tracking. MPCkit never connects to the internet: your samples and projects stay on your computer.
 
-![The MPCkit window on the Sequences tab: six sequences in bank A, with the name, BPM and length of the selected one on the right](docs/images/sequences.png)
+![The MPCkit window on the Sequences tab: six sequences in bank A with Clear bank above them, and the name, BPM and length of the selected one on the right](docs/images/sequences.png)
 
 Not in MPCkit yet: trimming samples with a waveform, level and pan, loop and trigger modes, effects, and editing recorded notes.
 
