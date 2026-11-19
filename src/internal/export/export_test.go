@@ -584,3 +584,31 @@ func TestClearedBankSurvivesExport(t *testing.T) {
 		t.Errorf("pool reloaded as %q, want %q", b, a)
 	}
 }
+
+// Moved, swapped and copied sequences load back as they were exported,
+// with the song following them.
+func TestSequenceMovesSurviveExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "DemoSeqMove.xpj"))
+	must(t, err)
+	must(t, p.MoveSequence(1, 40))
+	must(t, p.SwapSequences(0, 2))
+	must(t, p.CopySequence(40, 127))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+	q, _, err := project.Load(path)
+	must(t, err)
+	if a, b := fmt.Sprint(p.Sequences()), fmt.Sprint(q.Sequences()); a != b {
+		t.Errorf("sequences reloaded as %s, want %s", b, a)
+	}
+	d, err := q.File().Data()
+	must(t, err)
+	items, err := d.Get("songs[0].items")
+	must(t, err)
+	var song []string
+	for _, it := range items.Items {
+		song = append(song, it.Lookup("item.sequenceIndex").Text)
+	}
+	if got := strings.Join(song, " "); got != "2 40 0 40" {
+		t.Errorf("song slots %s, want 2 40 0 40", got)
+	}
+}

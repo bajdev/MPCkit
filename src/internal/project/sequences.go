@@ -69,7 +69,7 @@ func (p *Project) AddSequence(slot int) error {
 		return err
 	}
 	if p.findSequence(slot) >= 0 {
-		return fmt.Errorf("sequence %d already exists", slot+1)
+		return fmt.Errorf("%s already holds a sequence", SlotName(slot))
 	}
 	bpm := p.lastBPM
 	if bpm == 0 {
@@ -99,7 +99,7 @@ func (p *Project) AddSequence(slot int) error {
 func (p *Project) RemoveSequence(slot int) error {
 	i := p.findSequence(slot)
 	if i < 0 {
-		return fmt.Errorf("sequence %d does not exist", slot+1)
+		return fmt.Errorf("no sequence in %s", SlotName(slot))
 	}
 	if len(p.sequences().Items) == 1 {
 		return fmt.Errorf("cannot remove the only sequence")
@@ -123,12 +123,136 @@ func (p *Project) RemoveSequence(slot int) error {
 	return nil
 }
 
+// songSlot is the key of a song item that names a sequence by its slot
+// (checkpoint E).
+const songSlot = "item.sequenceIndex"
+
+// sequenceAt returns the sequences[] entry for slot, after checking the slot.
+func (p *Project) sequenceAt(slot int) (*xpj.Node, error) {
+	if err := checkSeqSlot(slot); err != nil {
+		return nil, err
+	}
+	i := p.findSequence(slot)
+	if i < 0 {
+		return nil, fmt.Errorf("no sequence in %s", SlotName(slot))
+	}
+	return p.sequences().Items[i], nil
+}
+
+// checkSeqEmpty refuses a slot out of range or holding a sequence.
+func (p *Project) checkSeqEmpty(slot int) error {
+	if err := checkSeqSlot(slot); err != nil {
+		return err
+	}
+	if p.findSequence(slot) >= 0 {
+		return fmt.Errorf("%s already holds a sequence", SlotName(slot))
+	}
+	return nil
+}
+
+// followSlots points song items and currentSequence that name a slot in
+// moved at its new slot. Songs and currentSequence name sequences by slot,
+// so they keep the same sequences (checkpoint E). Items that are not
+// objects or hold no slot number are left alone; fromFile does not check
+// songs.
+func (p *Project) followSlots(moved map[int64]int64) {
+	if songs := p.data.Lookup("songs"); songs != nil {
+		for _, song := range songs.Items {
+			items := song.Lookup("items")
+			if items == nil {
+				continue
+			}
+			for _, it := range items.Items {
+				if it.Kind != xpj.Object {
+					continue
+				}
+				if from, err := it.Lookup(songSlot).Int(); err == nil {
+					if to, ok := moved[from]; ok {
+						_ = it.SetKey(songSlot, xpj.NewInt(to))
+					}
+				}
+			}
+		}
+	}
+	if cur := p.data.Lookup("currentSequence"); cur != nil {
+		if from, err := cur.Int(); err == nil {
+			if to, ok := moved[from]; ok {
+				_ = p.data.SetKey("currentSequence", xpj.NewInt(to))
+			}
+		}
+	}
+}
+
+// MoveSequence moves the sequence in from to the empty slot to. Songs and
+// the current sequence follow it. Moving a sequence onto its own slot does
+// nothing.
+func (p *Project) MoveSequence(from, to int) error {
+	s, err := p.sequenceAt(from)
+	if err != nil {
+		return err
+	}
+	if from == to {
+		return nil
+	}
+	if err := p.checkSeqEmpty(to); err != nil {
+		return err
+	}
+	// fromFile checked that each entry has a whole-number key, so it is an
+	// object and these writes cannot fail.
+	_ = s.SetKey("key", xpj.NewInt(int64(to)))
+	p.followSlots(map[int64]int64{int64(from): int64(to)})
+	p.dirty = true
+	return nil
+}
+
+// SwapSequences exchanges the sequences in slots a and b. Songs and the
+// current sequence follow them.
+func (p *Project) SwapSequences(a, b int) error {
+	sa, err := p.sequenceAt(a)
+	if err != nil {
+		return err
+	}
+	sb, err := p.sequenceAt(b)
+	if err != nil {
+		return err
+	}
+	if a == b {
+		return nil
+	}
+	_ = sa.SetKey("key", xpj.NewInt(int64(b)))
+	_ = sb.SetKey("key", xpj.NewInt(int64(a)))
+	p.followSlots(map[int64]int64{int64(a): int64(b), int64(b): int64(a)})
+	p.dirty = true
+	return nil
+}
+
+// CopySequence copies the sequence in from, notes included, to the empty
+// slot to. Like the device's own copy, it goes first in sequences[]. Songs
+// and the current sequence are unchanged.
+func (p *Project) CopySequence(from, to int) error {
+	s, err := p.sequenceAt(from)
+	if err != nil {
+		return err
+	}
+	if err := p.checkSeqEmpty(to); err != nil {
+		return err
+	}
+	if len(p.sequences().Items) >= MaxSequences {
+		return fmt.Errorf("the project already has %d sequences", MaxSequences)
+	}
+	c := s.Clone()
+	_ = c.SetKey("key", xpj.NewInt(int64(to)))
+	_ = p.sequences().Insert(0, c)
+	p.dirty = true
+	return nil
+}
+
 // SetSequence sets a sequence's name, BPM and length in bars. Recorded
 // notes are left as they are, including any past a new, shorter end.
 func (p *Project) SetSequence(slot int, name string, bpm float64, bars int) error {
 	i := p.findSequence(slot)
 	if i < 0 {
-		return fmt.Errorf("sequence %d does not exist", slot+1)
+		return fmt.Errorf("no sequence in %s", SlotName(slot))
 	}
 	if err := ValidName(name); err != nil {
 		return fmt.Errorf("sequence name: %w", err)

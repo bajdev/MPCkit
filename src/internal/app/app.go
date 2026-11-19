@@ -532,6 +532,23 @@ func (s *Service) RemoveSequenceBank(bank int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.RemoveSequenceBank(bank) })
 }
 
+// MoveSequence moves a sequence to an empty slot. Songs and the current
+// sequence follow it.
+func (s *Service) MoveSequence(from, to int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.MoveSequence(from, to) })
+}
+
+// SwapSequences exchanges two sequences. Songs and the current sequence
+// follow them.
+func (s *Service) SwapSequences(a, b int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.SwapSequences(a, b) })
+}
+
+// CopySequence copies a sequence, notes included, to an empty slot.
+func (s *Service) CopySequence(from, to int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.CopySequence(from, to) })
+}
+
 // SetSequence sets a sequence's name, BPM and length in bars. Notes past a
 // new, shorter end are left in the file.
 func (s *Service) SetSequence(slot int, name string, bpm float64, bars int) (State, error) {

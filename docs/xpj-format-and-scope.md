@@ -116,6 +116,13 @@ Exactly 26 fields, confirmed by comparing a 2-bar and a 4-bar sequence:
 ### Add a sequence
 Copy the blank sequence, set `sequences[].key` to the slot (0-based), then name, BPM and length as above. Only sequences that exist are stored, and the device does not write them in slot order.
 
+### Move, swap or copy a sequence
+Verified on the device in checkpoint E (2026-11-18, `docs/checkpoint-e.md`). Songs and `currentSequence` name sequences by slot, so they follow a moved sequence:
+- **Move:** set the entry's `key` to the new slot. Every song item whose `item.sequenceIndex` is the old slot gets the new one. If the sequence was current, `currentSequence` becomes the new slot.
+- **Swap:** exchange the two entries' `key`s, and the two slots in song items and in `currentSequence`.
+- **Copy:** clone the whole entry, notes included, set its `key`, and insert it first in `sequences[]`, as the device does with its own copy. Songs and `currentSequence` are unchanged.
+- Nothing else follows a slot: `clipPlayerData.trackClipTransportMap` keeps one `{"key": 0, "value": 0}` per track whatever the sequences.
+
 ## 4. Round-trip rules
 
 - Edit only known fields and write everything else back as read.
@@ -206,7 +213,7 @@ Copy the blank sequence, set `sequences[].key` to the slot (0-based), then name,
 
 | Property | Path | Proposed |
 |---|---|---|
-| Songs | `songs[0-31]`: `name`, `ignoreTempo`, `items` | 2.0 |
+| Songs | `songs[0-31]`: `name`, `ignoreTempo`, `items[]` of `{"item.sequenceIndex": slot, "item.repeats": n}` (checkpoint E). MPCkit only updates slots when a sequence moves | 2.0 |
 | Submix and output tracks | `tracks[1-10]`, `mixer.submixes`, `mixer.outputs` | preserve |
 | Insert effects | `...mixable.inserts.effects[].plugin` (`description`, `state` blob) | preserve |
 | Q-Link, XY, crossfader assignments | `qlink*`, `assignable*` | preserve |
@@ -259,6 +266,14 @@ Five projects made from DemoFile in the app, exported, and loaded on the device 
 - **Remove the current sequence, add one in bank B** (B4): works; Sequence 02 is selected on open (see open question 7).
 - **Shorten a sequence with notes** (B5): the notes past the new end are kept and play again once the sequence is lengthened (open question 4).
 
+### Checkpoint E (2026-11-18)
+
+`DemoSeqMove`, saved by the device with a song and a copied sequence, and four projects made from it by `tools/checkpoint-e` (details and results in `docs/checkpoint-e.md`). The device cannot move a sequence, only copy one. All four loaded:
+
+- **Move without updating the song** (Q1): the sequence shows in its new slot, but the song plays an empty default sequence where it was. Song items name slots.
+- **Move and swap with the song following** (Q2, Q3): the songs play the same sequences as before. After the swap, the current sequence opened in its new slot (open question 7).
+- **Copy** (Q4): the copy and the original both show; the current sequence is unchanged.
+
 ## 8. Open questions
 
 1. Device-test a moved and a copied pad.
@@ -268,4 +283,4 @@ Five projects made from DemoFile in the app, exported, and loaded on the device 
 4. ~~When a sequence with notes is shortened, are notes past the new end kept or removed?~~ Answered 2026-11-11 (checkpoint B5): kept. They don't play while the sequence is shorter, and play again when it is lengthened on the device.
 5. Sample rates outside 22.05-96 kHz and 64-bit float are untested. (The extensible header was confirmed in checkpoint A; other WAV bit depths and sample rates are confirmed; non-WAV formats are out of 0.5.0.)
 6. What key and tempo to write for a sample MPCkit imports (the device detects them; MPCkit cannot yet).
-7. Is `currentSequence` a slot number or an index into `sequences[]`? Every file seen has 0, and slot 0 is stored second, so the files cannot tell. MPCkit treats it as a slot (build plan 4.3). Checkpoint B4 (removing the current sequence) worked, with Sequence 02 selected on open, but in that file slot 1 and list position 1 are the same sequence, so it does not tell them apart. Still open.
+7. Is `currentSequence` a slot number or an index into `sequences[]`? Every file seen has 0, and slot 0 is stored second, so the files cannot tell. MPCkit treats it as a slot (build plan 4.3). Checkpoint B4 (removing the current sequence) worked, with Sequence 02 selected on open, but in that file slot 1 and list position 1 are the same sequence, so it does not tell them apart. **Answered 2026-11-18 (checkpoint E, Q3): a slot.** With `currentSequence` 0 and the list `[B5, Three, Two, One]`, the device opened "Three" in slot A1, not the first in the list.
