@@ -1,6 +1,6 @@
 # MPCkit rearrange sequences by dragging: work plan
 
-Written 2026-11-17. **Not started.** It begins with a check on the device that only bajdev can do. No code PR starts before its results are recorded and the decisions below are confirmed. The release version is bajdev's choice and is not set here.
+Written 2026-11-17. **Going ahead** (bajdev, 2026-11-18): device check D1 is done (`docs/checkpoint-e.md`), and all eight decisions are confirmed with what it found. The release version is bajdev's choice and is not set here.
 
 The feature: on the Sequences tab, drag a sequence onto another slot to move it there, drag it onto a filled slot to swap the two, and hold Alt while dragging to copy it. This is how pads already work on the Pads tab.
 
@@ -43,7 +43,7 @@ Record the answers in `docs/checkpoint-e.md`, in the layout of `docs/checkpoint-
 
 ## Decisions
 
-Proposed by the plan, **to confirm with bajdev after D1**:
+Confirmed by bajdev on 2026-11-18, after D1. Agents follow them and do not reopen them:
 
 | # | Topic | Proposal |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Proposed by the plan, **to confirm with bajdev after D1**:
 | 2 | Recipe | Move and swap change only `key` (and `currentSequence`, decision 4). Copy clones the whole entry, notes included, with the new `key`, and puts it first in `sequences[]`, as `AddSequence` does. Anything else D1 shows the device changing is added to the recipe before Q1 starts. |
 | 3 | Names | Unchanged. A sequence called "Sequence 01" keeps that name in slot B5. The user renames it if they want. |
 | 4 | Current sequence | Follows the sequence: if the moved or swapped sequence was current, `currentSequence` becomes its new slot. A copy never becomes current. |
-| 5 | Songs | If D1 shows song items name sequences by slot, moving and swapping update them so songs keep playing the same sequences. If they name sequences another way, follow that. If D1 cannot settle it, refuse to move or swap a sequence any song uses, with a message saying why. |
+| 5 | Songs | D1 showed that song items name sequences by slot (`item.sequenceIndex`). Moving and swapping update every item naming those slots, so songs keep playing the same sequences. |
 | 6 | Sequence limit | Copy is refused when the project has 128 sequences (it cannot, with 128 slots, but the check stays). |
 | 7 | Bank switching | Dragging a sequence over a bank letter shows that bank, as for pads. |
 | 8 | Command line | `-moveseq FROM:TO`, `-swapseq A:B` and `-copyseq FROM:TO` in `mpckit-cli`, with slots written as on the grid (`A1`, `C9`). |
@@ -114,7 +114,6 @@ exports a project whose sequences are in the slots asked for. Then bajdev loads 
 - [ ] In `App.svelte`, the sequence grid gets `ondroppad` and its `BankBar` gets `ondragbank`, as the pad grid has. Drop on an empty slot calls `MoveSequence`, on a filled slot `SwapSequences`, with Alt on an empty slot `CopySequence` (decision 1). Alt onto a filled slot does nothing, and the cursor shows that.
 - [ ] Only filled slots can be dragged. Empty slots stay as they are: clicking one still selects it to add a sequence.
 - [ ] After a move, the moved sequence is selected in its new slot.
-- [ ] If decision 5 refuses a move because a song uses the sequence, the message shows in the usual place.
 - [ ] The Sequences tab's hint adds: "Drag a sequence to move it, onto another to swap them, with Alt to copy."
 - [ ] README: the same in the usage section.
 
