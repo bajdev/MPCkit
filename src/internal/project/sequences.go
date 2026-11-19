@@ -69,7 +69,7 @@ func (p *Project) AddSequence(slot int) error {
 		return err
 	}
 	if p.findSequence(slot) >= 0 {
-		return fmt.Errorf("sequence %d already exists", slot+1)
+		return fmt.Errorf("%s already holds a sequence", SlotName(slot))
 	}
 	bpm := p.lastBPM
 	if bpm == 0 {
@@ -99,7 +99,7 @@ func (p *Project) AddSequence(slot int) error {
 func (p *Project) RemoveSequence(slot int) error {
 	i := p.findSequence(slot)
 	if i < 0 {
-		return fmt.Errorf("sequence %d does not exist", slot+1)
+		return fmt.Errorf("no sequence in %s", SlotName(slot))
 	}
 	if len(p.sequences().Items) == 1 {
 		return fmt.Errorf("cannot remove the only sequence")
@@ -252,7 +252,7 @@ func (p *Project) CopySequence(from, to int) error {
 func (p *Project) SetSequence(slot int, name string, bpm float64, bars int) error {
 	i := p.findSequence(slot)
 	if i < 0 {
-		return fmt.Errorf("sequence %d does not exist", slot+1)
+		return fmt.Errorf("no sequence in %s", SlotName(slot))
 	}
 	if err := ValidName(name); err != nil {
 		return fmt.Errorf("sequence name: %w", err)

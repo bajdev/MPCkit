@@ -197,3 +197,24 @@ func TestCopyRefusedAtLimit(t *testing.T) {
 		t.Error("copy accepted with 128 sequences")
 	}
 }
+
+// Sequence errors name slots as the grid does.
+func TestSequenceErrorsUseGridLabels(t *testing.T) {
+	p := loadSeqMove(t)
+	for _, c := range []struct {
+		err  error
+		want string
+	}{
+		{p.AddSequence(1), "A2 already holds a sequence"},
+		{p.RemoveSequence(5), "no sequence in A6"},
+		{p.SetSequence(5, "x", 120, 2), "no sequence in A6"},
+		{p.MoveSequence(5, 6), "no sequence in A6"},
+		{p.MoveSequence(0, 1), "A2 already holds a sequence"},
+		{p.SwapSequences(0, 37), "no sequence in C6"},
+		{p.CopySequence(0, 20), "B5 already holds a sequence"},
+	} {
+		if c.err == nil || c.err.Error() != c.want {
+			t.Errorf("error %v, want %q", c.err, c.want)
+		}
+	}
+}
