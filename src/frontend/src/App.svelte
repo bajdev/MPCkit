@@ -156,6 +156,25 @@
     }
   }
 
+  // A sequence dropped on a slot: move to an empty slot, swap onto a filled
+  // one, Alt to copy onto an empty slot only. Songs follow (checkpoint E).
+  function canDropSeq(_from: number, to: number, copy: boolean): boolean {
+    return !(copy && seqBySlot.has(to));
+  }
+
+  async function dropSeq(from: number, to: number, copy: boolean) {
+    if (!canDropSeq(from, to, copy)) return;
+    const call = copy
+      ? () => Service.CopySequence(from, to)
+      : seqBySlot.has(to)
+        ? () => Service.SwapSequences(from, to)
+        : () => Service.MoveSequence(from, to);
+    if (await run(call)) {
+      ui.seqBank = Math.floor(to / PER_BANK);
+      ui.seqSlot = to;
+    }
+  }
+
   // A pad dropped on another: move, swap onto a filled pad, Alt to copy.
   function dropPad(from: number, to: number, copy: boolean) {
     transfer(transferKind(pads[from], pads[to], copy), from, to);
@@ -304,10 +323,18 @@
               ui.seqBank = b;
               ui.seqSlot = b * PER_BANK;
             }}
+            ondragbank={(b) => (ui.seqBank = b)}
           />
-          <SlotGrid cells={seqCells} selected={ui.seqSlot} onpick={(s) => (ui.seqSlot = s)} />
+          <SlotGrid
+            cells={seqCells}
+            selected={ui.seqSlot}
+            onpick={(s) => (ui.seqSlot = s)}
+            ondroppad={dropSeq}
+            candrop={canDropSeq}
+          />
           <p class="hint grid-hint">
             Each pad is one sequence slot, {st.limits.maxSequences} in total. Click an empty slot to add a sequence there.
+            Drag a sequence to move it, onto another to swap them, with Alt to copy.
           </p>
         </section>
         <SequencePanel slot={ui.seqSlot} seq={seqBySlot.get(ui.seqSlot)} limits={st.limits} />
