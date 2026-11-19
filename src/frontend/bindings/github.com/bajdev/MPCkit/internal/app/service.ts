@@ -96,6 +96,13 @@ export function CopyPad($from: number, to: number): $CancellablePromise<$models.
 }
 
 /**
+ * CopySequence copies a sequence, notes included, to an empty slot.
+ */
+export function CopySequence($from: number, to: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(108615584, $from, to);
+}
+
+/**
  * ExportFolder writes the project into the folder ChooseExportFolder
  * chose. If the project is already there and overwrite is false, nothing
  * is written and Exists lists it.
@@ -126,6 +133,14 @@ export function Load(): $CancellablePromise<$models.LoadResult> {
  */
 export function MovePad($from: number, to: number): $CancellablePromise<$models.State> {
     return $Call.ByID(1334313874, $from, to);
+}
+
+/**
+ * MoveSequence moves a sequence to an empty slot. Songs and the current
+ * sequence follow it.
+ */
+export function MoveSequence($from: number, to: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(3194925840, $from, to);
 }
 
 /**
@@ -209,4 +224,12 @@ export function State(): $CancellablePromise<$models.State> {
  */
 export function SwapPads(a: number, b: number): $CancellablePromise<$models.State> {
     return $Call.ByID(4250369653, a, b);
+}
+
+/**
+ * SwapSequences exchanges two sequences. Songs and the current sequence
+ * follow them.
+ */
+export function SwapSequences(a: number, b: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(4043589411, a, b);
 }

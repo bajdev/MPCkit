@@ -105,6 +105,9 @@ func init() {
 		{"rmseq", "remove a sequence: `N`", parseRmseqOp},
 		{"clearbank", "clear every pad of a bank: `BANK` (A-H)", parseClearBankOp},
 		{"rmseqbank", "remove every sequence of a bank, keeping one if it held them all: `BANK` (A-H)", parseRmseqBankOp},
+		{"moveseq", "move a sequence to an empty slot; songs follow it: `FROM:TO` (e.g. A2:C9)", parseMoveseqOp},
+		{"swapseq", "swap two sequences; songs follow them: `A:B` (e.g. A1:A3)", parseSwapseqOp},
+		{"copyseq", "copy a sequence to an empty slot: `FROM:TO` (e.g. C9:H16)", parseCopyseqOp},
 	} {
 		addOp(f.name, f.usage, f.parse)
 	}
@@ -336,6 +339,33 @@ func parseRmseqBankOp(arg string) (opFunc, error) {
 		return nil, err
 	}
 	return func(p *project.Project) error { return p.RemoveSequenceBank(bank) }, nil
+}
+
+// parseMoveseqOp reads -moveseq FROM:TO, slots written as on the grid.
+func parseMoveseqOp(arg string) (opFunc, error) {
+	from, to, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.MoveSequence(from, to) }, nil
+}
+
+// parseSwapseqOp reads -swapseq A:B.
+func parseSwapseqOp(arg string) (opFunc, error) {
+	a, b, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.SwapSequences(a, b) }, nil
+}
+
+// parseCopyseqOp reads -copyseq FROM:TO.
+func parseCopyseqOp(arg string) (opFunc, error) {
+	from, to, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.CopySequence(from, to) }, nil
 }
 
 func main() {

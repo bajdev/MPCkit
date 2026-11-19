@@ -638,9 +638,10 @@ func TestBoundMethods(t *testing.T) {
 	want := []string{
 		"About", "AddSequence", "AssignSampleDialog", "CancelExport",
 		"ChooseExportFolder", "ChooseZipPath", "ClearBank", "ClearPad", "CloseWindow",
-		"CopyPad", "ExportFolder", "ExportZip", "Load", "MovePad", "New",
-		"RemoveSequence", "RemoveSequenceBank", "RenameSample", "SetMuteGroup", "SetName",
-		"SetSequence", "SetTrim", "SetTune", "State", "SwapPads",
+		"CopyPad", "CopySequence", "ExportFolder", "ExportZip", "Load", "MovePad",
+		"MoveSequence", "New", "RemoveSequence", "RemoveSequenceBank", "RenameSample",
+		"SetMuteGroup", "SetName", "SetSequence", "SetTrim", "SetTune", "State", "SwapPads",
+		"SwapSequences",
 	}
 	typ := reflect.TypeOf(&Service{})
 	var got []string
@@ -755,5 +756,31 @@ func TestRemoveSequenceBankThroughService(t *testing.T) {
 	st, err = s.RemoveSequenceBank(-1)
 	if err == nil || st.SequenceCount != 1 {
 		t.Errorf("bank -1: %v", err)
+	}
+}
+
+func TestSequenceMovesThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := s.AddSequence(1)
+	must(t, err)
+	st, err := s.MoveSequence(1, 40)
+	must(t, err)
+	if st.SequenceCount != 2 || st.Sequences[1].Slot != 40 || st.Sequences[1].Label != "C9" || !st.Dirty {
+		t.Errorf("move: %+v", st.Sequences)
+	}
+	st, err = s.SwapSequences(0, 40)
+	must(t, err)
+	if st.Sequences[0].Name != "Sequence 02" || st.Sequences[1].Name != "Sequence 01" {
+		t.Errorf("swap: %+v", st.Sequences)
+	}
+	st, err = s.CopySequence(0, 127)
+	must(t, err)
+	if st.SequenceCount != 3 || st.Sequences[2].Slot != 127 || st.Sequences[2].Name != "Sequence 02" {
+		t.Errorf("copy: %+v", st.Sequences)
+	}
+	// A refused move still returns the state, unchanged.
+	st, err = s.MoveSequence(5, 6)
+	if err == nil || st.SequenceCount != 3 {
+		t.Errorf("move from an empty slot: %v", err)
 	}
 }
