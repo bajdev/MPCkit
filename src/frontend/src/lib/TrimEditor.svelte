@@ -1,28 +1,37 @@
 <script lang="ts">
-  import type { Pad } from "./api";
+  import { Service, type Pad } from "./api";
   import { loadSample, play, type Sample } from "./audio";
   import Modal from "./Modal.svelte";
-  import { message } from "./store.svelte";
+  import { app, message, run } from "./store.svelte";
   import Waveform from "./Waveform.svelte";
   import { peaks, type Extremes } from "./waveform";
 
-  // The start/end dialog for one pad (waveform plan, PR W3): shows the
-  // sample with the pad's region, zooms, scrolls and plays. Read-only for
-  // now; PR W4 adds the markers and fields.
+  // The start/end dialog for one pad (waveform plan, PRs W3 and W4): shows
+  // the sample, zooms, scrolls and plays, and edits where the pad starts and
+  // ends. The dialog works on its own copy; Apply saves both in one step,
+  // and Cancel or Escape drops the changes (decision 4).
   let { pad, onclose }: { pad: Pad; onclose: () => void } = $props();
 
   // The closest zoom: this many file frames across the view.
   const MIN_SPAN = 64;
+  // Go to start and Go to end show about this many frames across.
+  const CLOSE_SPAN = 2000;
 
   let sample = $state<Sample | null>(null);
   let blocks = $state<Extremes | null>(null);
   let loadError = $state("");
   let playError = $state("");
-  let closeButton: HTMLButtonElement | undefined = $state();
+  let applyError = $state("");
+  let cancelButton: HTMLButtonElement | undefined = $state();
 
   // The view: file frames `from` up to (not including) `to`.
   let from = $state(0);
   let to = $state(1);
+
+  // The dialog's own region, in file frames, both included. Start is at
+  // least one frame before end: at least 2 frames play (decision 5).
+  let start = $state(0);
+  let end = $state(0);
 
   $effect(() => {
     const url = pad.audio;
@@ -40,6 +49,12 @@
         sample = s;
         from = 0;
         to = s.frames;
+        // The pad's region, clamped to the file: a loaded project can hold
+        // a start or end outside it. An end not after start means the last
+        // frame, as in the preview.
+        const last = s.frames - 1;
+        start = Math.max(0, Math.min(pad.start, last - 1));
+        end = pad.end > start ? Math.min(pad.end, last) : last;
       },
       (e) => {
         if (current) loadError = message(e);
@@ -48,46 +63,93 @@
     return () => (current = false);
   });
 
-  const frames = $derived(sample?.frames ?? 1);
+  const frames = $derived(sample?.frames ?? 2);
+  const last = $derived(frames - 1);
   const span = $derived(to - from);
   const whole = $derived(span >= frames);
+  const changed = $derived(start !== pad.start || end !== pad.end);
 
-  // The pad's region, clamped to the file: a loaded project can hold a start
-  // or end outside it. An end not after start means the last frame, as in
-  // the preview.
-  const regionStart = $derived(Math.min(Math.max(pad.start, 0), frames - 1));
-  const regionEnd = $derived(pad.end > regionStart ? Math.min(pad.end, frames - 1) : frames - 1);
+  function setStart(f: number) {
+    start = Math.min(Math.max(Math.round(f), 0), end - 1);
+  }
+
+  function setEnd(f: number) {
+    end = Math.max(Math.min(Math.round(f), last), start + 1);
+  }
 
   /** Zooms by factor (below 1 zooms in), keeping file frame `at` where it is. */
   function zoom(factor: number, at = from + span / 2) {
     const next = Math.round(Math.min(frames, Math.max(MIN_SPAN, span * factor)));
     const ratio = span > 0 ? (at - from) / span : 0.5;
-    const start = Math.round(Math.min(frames - next, Math.max(0, at - ratio * next)));
-    from = start;
-    to = start + next;
+    const first = Math.round(Math.min(frames - next, Math.max(0, at - ratio * next)));
+    from = first;
+    to = first + next;
   }
 
-  function scrollTo(start: number) {
+  function scrollTo(first: number) {
     const width = span; // read first: span follows from and to
-    from = start;
-    to = start + width;
+    from = first;
+    to = first + width;
+  }
+
+  /** Shows about CLOSE_SPAN frames centred on frame f. */
+  function goTo(f: number) {
+    const next = Math.min(frames, CLOSE_SPAN);
+    const first = Math.round(Math.min(frames - next, Math.max(0, f - next / 2)));
+    from = first;
+    to = first + next;
+  }
+
+  function reset() {
+    start = 0;
+    end = last;
   }
 
   async function preview() {
     playError = "";
     try {
-      await play(pad);
+      await play({ ...pad, start, end }); // the dialog's region, before it is saved
     } catch (e) {
       playError = message(e);
     }
   }
 
+  async function apply() {
+    applyError = "";
+    const slot = pad.slot;
+    if (await run(() => Service.SetTrim(slot, start, end))) {
+      onclose();
+    } else {
+      applyError = app.error; // also in the window's banner, behind the dialog
+    }
+  }
+
+  // A typed value is used while it is in range, and corrected when the
+  // field loses focus (or Enter is pressed).
+  function typed(e: Event & { currentTarget: HTMLInputElement }, which: "start" | "end") {
+    const v = e.currentTarget.valueAsNumber;
+    if (!Number.isInteger(v)) return;
+    if (which === "start" && v >= 0 && v < end) start = v;
+    if (which === "end" && v > start && v <= last) end = v;
+  }
+
+  function corrected(e: Event & { currentTarget: HTMLInputElement }, which: "start" | "end") {
+    const v = e.currentTarget.valueAsNumber;
+    if (which === "start") setStart(Number.isFinite(v) ? v : start);
+    else setEnd(Number.isFinite(v) ? v : end);
+    e.currentTarget.value = String(which === "start" ? start : end);
+  }
+
   function seconds(n: number, rate: number): string {
     return (n / rate).toFixed(3) + " s";
   }
+
+  function ms(f: number, rate: number): string {
+    return ((f / rate) * 1000).toFixed(1) + " ms";
+  }
 </script>
 
-<Modal titleId="trim-title" {onclose} focus={closeButton} width={880}>
+<Modal titleId="trim-title" {onclose} focus={cancelButton} width={880}>
   <h2 id="trim-title">{pad.label} · {pad.file}</h2>
 
   {#if loadError}
@@ -100,7 +162,16 @@
         "en",
       )} Hz
     </p>
-    <Waveform {sample} {blocks} {from} {to} start={regionStart} end={regionEnd} onzoom={zoom} />
+    <Waveform
+      {sample}
+      {blocks}
+      {from}
+      {to}
+      {start}
+      {end}
+      onzoom={zoom}
+      onmarker={(which, f) => (which === "start" ? setStart(f) : setEnd(f))}
+    />
     <input
       class="scroll"
       type="range"
@@ -120,11 +191,56 @@
       >
       <button type="button" class="btn primary" onclick={preview}>Play</button>
     </div>
+    <div class="points">
+      <div class="point">
+        <label class="label" for="trim-start">Start</label>
+        <input
+          id="trim-start"
+          class="field mono"
+          type="number"
+          min="0"
+          max={end - 1}
+          step="1"
+          value={start}
+          aria-describedby="trim-start-ms"
+          oninput={(e) => typed(e, "start")}
+          onchange={(e) => corrected(e, "start")}
+        />
+        <span id="trim-start-ms" class="ms mono">{ms(start, sample.rate)}</span>
+        <button type="button" class="btn secondary" onclick={() => goTo(start)}>Go to start</button>
+      </div>
+      <div class="point">
+        <label class="label" for="trim-end">End</label>
+        <input
+          id="trim-end"
+          class="field mono"
+          type="number"
+          min={start + 1}
+          max={last}
+          step="1"
+          value={end}
+          aria-describedby="trim-end-ms"
+          oninput={(e) => typed(e, "end")}
+          onchange={(e) => corrected(e, "end")}
+        />
+        <span id="trim-end-ms" class="ms mono">{ms(end, sample.rate)}</span>
+        <button type="button" class="btn secondary" onclick={() => goTo(end)}>Go to end</button>
+      </div>
+    </div>
     {#if playError}<p class="error" role="alert">{playError}</p>{/if}
+    {#if applyError}<p class="error" role="alert">{applyError}</p>{/if}
   {/if}
 
   <div class="buttons">
-    <button type="button" class="btn secondary" bind:this={closeButton} onclick={onclose}>Close</button>
+    {#if sample}
+      <button type="button" class="btn secondary reset" onclick={reset} disabled={start === 0 && end === last}
+        >Reset</button
+      >
+    {/if}
+    <button type="button" class="btn secondary" bind:this={cancelButton} onclick={onclose}>Cancel</button>
+    {#if sample}
+      <button type="button" class="btn primary" disabled={!changed} onclick={apply}>Apply</button>
+    {/if}
   </div>
 </Modal>
 
@@ -145,8 +261,35 @@
     margin: 0;
     color: #ffb4b4;
   }
+  /* Start and End side by side, each: label, field, time, Go to. */
+  .points {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 24px;
+  }
+  .point {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .point .field {
+    width: 9em;
+    flex: none;
+  }
+  .ms {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
   .buttons {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
+  }
+  .buttons .reset {
+    margin-right: auto;
   }
 </style>

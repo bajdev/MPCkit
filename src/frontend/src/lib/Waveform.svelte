@@ -4,7 +4,8 @@
 
   // Draws file frames `from` up to `to` of a sample, with the part outside
   // the pad's region (start to end, both included) dimmed. Frames are the
-  // file's own (see waveform.ts).
+  // file's own (see waveform.ts). With onmarker, the region's edges are
+  // drawn as Start and End markers that can be dragged.
   let {
     sample,
     blocks,
@@ -13,6 +14,7 @@
     start,
     end,
     onzoom,
+    onmarker,
   }: {
     sample: Sample;
     blocks: Extremes; // peaks(sample)
@@ -21,7 +23,65 @@
     start: number;
     end: number;
     onzoom: (factor: number, at: number) => void; // wheel: zoom by factor around file frame `at`
+    onmarker?: (which: Marker, frame: number) => void; // a marker dragged to a frame; the caller keeps it in range
   } = $props();
+
+  type Marker = "start" | "end";
+
+  // How close to a marker, in CSS pixels, a press picks it up.
+  const GRAB = 10;
+
+  let dragging: Marker | null = null;
+
+  // A marker's x in CSS pixels. Start sits at the left edge of its frame and
+  // End at the right edge of its frame, where the dimming begins.
+  function markerX(which: Marker, w: number): number {
+    const frame = which === "start" ? start : end + 1;
+    return ((frame - from) / (to - from)) * w;
+  }
+
+  // The marker within GRAB pixels of x, the nearer one if both are.
+  function near(x: number, w: number): Marker | null {
+    const ds = Math.abs(x - markerX("start", w));
+    const de = Math.abs(x - markerX("end", w));
+    if (Math.min(ds, de) > GRAB) return null;
+    return ds <= de ? "start" : "end";
+  }
+
+  function frameAt(e: PointerEvent): number {
+    const box = canvas!.getBoundingClientRect();
+    return from + ((e.clientX - box.left) / box.width) * (to - from);
+  }
+
+  function pointerdown(e: PointerEvent) {
+    if (!onmarker || !canvas || e.button !== 0) return;
+    const box = canvas.getBoundingClientRect();
+    dragging = near(e.clientX - box.left, box.width);
+    if (!dragging) return;
+    e.preventDefault();
+    try {
+      canvas.setPointerCapture(e.pointerId); // keeps the drag going outside the canvas
+    } catch {
+      // the pointer is already gone; the drag still works over the canvas
+    }
+  }
+
+  function pointermove(e: PointerEvent) {
+    if (!onmarker || !canvas) return;
+    if (dragging) {
+      const f = Math.round(frameAt(e));
+      onmarker(dragging, dragging === "start" ? f : f - 1);
+      return;
+    }
+    const box = canvas.getBoundingClientRect();
+    canvas.style.cursor = near(e.clientX - box.left, box.width) ? "ew-resize" : "";
+  }
+
+  function pointerup(e: PointerEvent) {
+    if (!dragging || !canvas) return;
+    dragging = null;
+    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  }
 
   let wrap: HTMLDivElement | undefined = $state();
   let canvas: HTMLCanvasElement | undefined = $state();
@@ -55,7 +115,7 @@
   });
 
   $effect(() => {
-    draw(canvas, width, height, sample, blocks, from, to, start, end);
+    draw(canvas, width, height, sample, blocks, from, to, start, end, !!onmarker);
   });
 
   function draw(
@@ -68,6 +128,7 @@
     viewTo: number,
     first: number,
     last: number,
+    marked: boolean,
   ) {
     if (!el || w <= 0 || h <= 0) return;
     // Draw at the screen's pixel ratio, so the line is sharp on
@@ -105,12 +166,34 @@
     if (left > 0) g.fillRect(0, 0, left, ph);
     if (right < pw) g.fillRect(right, 0, pw - right, ph);
     g.globalAlpha = 1;
+
+    // The markers: a line with a tab at the top, not drawn outside the view.
+    if (!marked) return;
+    g.fillStyle = colour("--text");
+    const line = Math.max(2, Math.round(2 * ratio));
+    const tab = Math.round(10 * ratio);
+    for (const [at, inward] of [
+      [x(first), 1],
+      [x(last + 1), -1],
+    ]) {
+      if (at < 0 || at > pw) continue;
+      const left = Math.round(at - line / 2);
+      g.fillRect(left, 0, line, ph);
+      g.fillRect(inward > 0 ? left : left + line - tab, 0, tab, tab);
+    }
   }
 </script>
 
 <!-- The waveform is a picture of what the text beside it says; screen readers skip it. -->
 <div class="wave" bind:this={wrap}>
-  <canvas bind:this={canvas} aria-hidden="true"></canvas>
+  <canvas
+    bind:this={canvas}
+    aria-hidden="true"
+    onpointerdown={pointerdown}
+    onpointermove={pointermove}
+    onpointerup={pointerup}
+    onpointercancel={pointerup}
+  ></canvas>
 </div>
 
 <style>
@@ -127,5 +210,6 @@
     width: 100%;
     height: 100%;
     display: block;
+    touch-action: none; /* a touch drag moves a marker, not the page */
   }
 </style>
