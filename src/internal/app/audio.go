@@ -12,9 +12,10 @@ import (
 )
 
 // AudioPrefix is the URL path the preview loads samples from:
-// /audio/<slot> serves the pad's source WAV as it is, and
+// /audio/<slot> serves the pad's source WAV as it is,
 // /audio/<slot>?pcm=1 serves it decoded, for formats the webview cannot
-// decode (build plan 4.5 and section 9).
+// decode (build plan 4.5 and section 9), and /audio/<slot>?zeros=1 the
+// frames where it crosses zero, for the start/end editor.
 const AudioPrefix = "/audio/"
 
 // Headers on the plain WAV answer giving the file's own frame count and
@@ -58,7 +59,7 @@ func (s *Service) serveAudio(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 
-	if r.URL.Query().Get("pcm") == "" {
+	if r.URL.Query().Get("pcm") == "" && r.URL.Query().Get("zeros") == "" {
 		info, err := wav.ReadFile(src)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -68,6 +69,24 @@ func (s *Service) serveAudio(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(SampleRateHeader, strconv.Itoa(info.SampleRate))
 		w.Header().Set("Content-Type", "audio/wav")
 		http.ServeFile(w, r, src)
+		return
+	}
+
+	if r.URL.Query().Get("zeros") != "" {
+		// The file's zero crossings (wav.ZeroCrossings): frame numbers of
+		// the file, as uint32 little-endian, in order.
+		_, chans, err := wav.DecodeFile(src)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		zeros := wav.ZeroCrossings(chans)
+		buf := make([]byte, 4*len(zeros))
+		for i, f := range zeros {
+			binary.LittleEndian.PutUint32(buf[4*i:], f)
+		}
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(buf)
 		return
 	}
 

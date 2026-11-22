@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/bajdev/MPCkit/internal/project"
+	"github.com/bajdev/MPCkit/internal/wav"
 )
 
 const testdata = "../../testdata"
@@ -393,6 +394,25 @@ func TestAudio(t *testing.T) {
 	}
 	if peak < 0.1 || peak > 1 {
 		t.Errorf("pcm peak %v", peak)
+	}
+
+	// ?zeros=1: the zero crossings as uint32 frames, the same as
+	// wav.ZeroCrossings gives for the decoded file.
+	rec = get("/audio/3?zeros=1")
+	_, chans, err := wav.DecodeFile(kick)
+	must(t, err)
+	wantZeros := wav.ZeroCrossings(chans)
+	z := rec.Body.Bytes()
+	if rec.Code != 200 || len(wantZeros) == 0 || len(z) != 4*len(wantZeros) {
+		t.Fatalf("zeros: %d, %d bytes for %d crossings", rec.Code, len(z), len(wantZeros))
+	}
+	for i, f := range wantZeros {
+		if got := binary.LittleEndian.Uint32(z[4*i:]); got != f {
+			t.Fatalf("zero %d: %d, want %d", i, got, f)
+		}
+	}
+	if rec := get("/audio/6?zeros=1"); rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("zeros of an unreadable source: %d, want 422", rec.Code)
 	}
 
 	for _, url := range []string{"/audio/4", "/audio/x", "/audio/128", "/audio/-1"} {
