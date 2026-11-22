@@ -84,8 +84,9 @@ Settled with bajdev:
 | 8 | Stereo | One waveform: at each point, the loudest of the channels. | 2026-11-16 |
 | 9 | Trimmed marker on the pad grid | None in this version. | 2026-11-16 |
 | 10 | Command line | Add `-trim PAD=START:END` to `mpckit-cli`, so start and end can be tested on the server and used in scripts. | 2026-11-16 |
+| 11 | Snap to zero | Added after W4 (PR W4b). A **Snap to zero** switch in the dialog, on when it opens. While on, a dragged marker or a typed value goes to the nearest zero crossing in its allowed range, and Up and Down in the Start and End fields jump to the next or previous crossing. Stereo is mixed to mono. Crossings come from the file's own frames, not the decoded buffer. | 2026-11-22 |
 
-Out of scope: loop points and loop modes, slicing a sample across pads, snapping to zero crossings, changing the audio file, fades, and undo.
+Out of scope: loop points and loop modes, slicing a sample across pads, changing the audio file, fades, and undo. (Snapping to zero crossings was out of scope until bajdev added it on 2026-11-22: decision 11, PR W4b.)
 
 ## Guidelines for agents
 
@@ -102,7 +103,7 @@ Everything in "Guidelines for agents" in `docs/review-fixes-plan.md` applies: br
 ## PR order
 
 ```
-PR W1 preview-timing  →  PR W2 trim-model  →  PR W3 waveform-view  →  PR W4 trim-editor  →  PR W5 release-0-6-0 (tag v0.6.0)
+PR W1 preview-timing  →  PR W2 trim-model  →  PR W3 waveform-view  →  PR W4 trim-editor  →  PR W4b zero-snap  →  PR W5 release-0-6-0 (tag v0.6.0)
 ```
 
 | PR | Branch | What | Needs |
@@ -111,7 +112,8 @@ PR W1 preview-timing  →  PR W2 trim-model  →  PR W3 waveform-view  →  PR W
 | W2 | `trim-model` | `SetTrim` in the model, the app service and `mpckit-cli` | decisions 3-10 confirmed |
 | W3 | `waveform-view` | The dialog with the waveform, zoom, scroll and play | W1, and review plan PR 12 merged |
 | W4 | `trim-editor` | Markers, fields, Apply and Reset | W2 and W3 |
-| W5 | `release-0-6-0` | Device check, documents, version | W4 |
+| W4b | `zero-snap` | Snap to zero (decision 11), added 2026-11-22 | W4 |
+| W5 | `release-0-6-0` | Device check, documents, version | W4b |
 
 Each PR starts from `main` after the one before it is merged.
 
@@ -195,6 +197,19 @@ Makes the dialog edit.
 - Apply marks the project as changed. Export it, load the export: start and end are kept.
 - Copy a trimmed pad: the copy opens with the same start and end. Replace its sample: start and end are reset.
 - Everything in the dialog can be done with the keyboard alone.
+
+### PR W4b: `zero-snap`
+
+Added on 2026-11-22 at bajdev's request, after W4 (decision 11). Targets `feat/waveform`.
+
+- [ ] `wav.ZeroCrossings` in Go: the frames where the channels' average crosses zero. A frame that is exactly zero counts; where the sign changes between two frames, the one closer to zero counts (the first on a tie). Tests in `internal/wav`.
+- [ ] `/audio/<slot>?zeros=1` serves them as uint32 frames, so the window never reads the whole sample twice. No bound method changes.
+- [ ] In the dialog, a **Snap to zero** checkbox in the zoom row, ticked when it opens and disabled until the crossings are read (or if they cannot be).
+  - While it is ticked: a dragged marker goes to the nearest crossing in its range (Start: 0 to end - 1; End: start + 1 to the last frame), and a typed value does when the field is left or Enter is pressed. If the range has no crossing, the point stays where it was put.
+  - Up and Down in the Start and End fields jump to the next or previous crossing in range.
+  - Opening the dialog never moves the saved points, and Reset still sets the first and last frame exactly.
+
+**Done when** the checks pass and, on the laptop, with snapping on, the markers and fields land on zero crossings (zoom in close to see the line cross the middle), Up and Down step between crossings, and unticking the box gives one-frame steps again.
 
 ### PR W5: `release-0-6-0`
 
