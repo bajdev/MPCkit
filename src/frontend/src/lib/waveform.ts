@@ -82,3 +82,47 @@ export function columns(sample: Sample, blocks: Extremes, from: number, to: numb
   }
   return { min, max };
 }
+
+/**
+ * The frames where the sample file crosses zero, in order (Go's
+ * wav.ZeroCrossings: channels mixed to mono). Frames of the file, read from
+ * the file itself, not the decoded buffer, which may run at another rate.
+ */
+export async function fetchZeros(url: string): Promise<Uint32Array> {
+  const res = await fetch(url + (url.includes("?") ? "&" : "?") + "zeros=1");
+  if (!res.ok) throw new Error((await res.text()) || `Could not read the sample (${res.status}).`);
+  return new Uint32Array(await res.arrayBuffer());
+}
+
+// The index of the first crossing at or after frame f.
+function firstAtOrAfter(zeros: Uint32Array, f: number): number {
+  let lo = 0;
+  let hi = zeros.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (zeros[mid] < f) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** The crossing nearest frame f within lo..hi (both included), or null if there is none. */
+export function nearestZero(zeros: Uint32Array, f: number, lo: number, hi: number): number | null {
+  const t = Math.min(Math.max(f, lo), hi);
+  const i = firstAtOrAfter(zeros, t); // zeros[i] >= t >= lo, zeros[i - 1] < t <= hi
+  const after = i < zeros.length && zeros[i] <= hi ? zeros[i] : null;
+  const before = i > 0 && zeros[i - 1] >= lo ? zeros[i - 1] : null;
+  if (after === null) return before;
+  if (before === null) return after;
+  return t - before <= after - t ? before : after;
+}
+
+/** The next crossing after frame f (dir 1) or before it (dir -1) within lo..hi, or null. */
+export function stepZero(zeros: Uint32Array, f: number, dir: 1 | -1, lo: number, hi: number): number | null {
+  if (dir > 0) {
+    const i = firstAtOrAfter(zeros, f + 1);
+    return i < zeros.length && zeros[i] <= hi && zeros[i] >= lo ? zeros[i] : null;
+  }
+  const j = firstAtOrAfter(zeros, f) - 1;
+  return j >= 0 && zeros[j] >= lo && zeros[j] <= hi ? zeros[j] : null;
+}

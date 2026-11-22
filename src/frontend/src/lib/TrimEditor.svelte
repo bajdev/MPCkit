@@ -4,7 +4,7 @@
   import Modal from "./Modal.svelte";
   import { app, message, run } from "./store.svelte";
   import Waveform from "./Waveform.svelte";
-  import { peaks, type Extremes } from "./waveform";
+  import { fetchZeros, nearestZero, peaks, stepZero, type Extremes } from "./waveform";
 
   // The start/end dialog for one pad (waveform plan, PRs W3 and W4): shows
   // the sample, zooms, scrolls and plays, and edits where the pad starts and
@@ -22,6 +22,11 @@
   let loadError = $state("");
   let playError = $state("");
   let applyError = $state("");
+
+  // Snap to zero (PR W4b): markers and typed values go to the nearest frame
+  // where the sample crosses zero. On when the dialog opens.
+  let snap = $state(true);
+  let zeros = $state<Uint32Array | null>(null); // null until read, or if it cannot be
   let cancelButton: HTMLButtonElement | undefined = $state();
 
   // The view: file frames `from` up to (not including) `to`.
@@ -36,12 +41,19 @@
   $effect(() => {
     const url = pad.audio;
     sample = blocks = null;
+    zeros = null;
     loadError = "";
     if (!url) {
       loadError = "The sample file is missing.";
       return;
     }
     let current = true;
+    fetchZeros(url).then(
+      (z) => {
+        if (current) zeros = z;
+      },
+      () => {}, // snapping is then unavailable; the dialog works without it
+    );
     loadSample(url).then(
       (s) => {
         if (!current) return;
@@ -69,12 +81,29 @@
   const whole = $derived(span >= frames);
   const changed = $derived(start !== pad.start || end !== pad.end);
 
+  const snapping = $derived(snap && zeros !== null);
+
+  // Start is 0 to end - 1, End is start + 1 to the last frame. While
+  // snapping, each goes to the nearest crossing in its range, or stays where
+  // it was put if the range has none.
   function setStart(f: number) {
-    start = Math.min(Math.max(Math.round(f), 0), end - 1);
+    const v = Math.min(Math.max(Math.round(f), 0), end - 1);
+    start = snapping ? (nearestZero(zeros!, v, 0, end - 1) ?? v) : v;
   }
 
   function setEnd(f: number) {
-    end = Math.max(Math.min(Math.round(f), last), start + 1);
+    const v = Math.max(Math.min(Math.round(f), last), start + 1);
+    end = snapping ? (nearestZero(zeros!, v, start + 1, last) ?? v) : v;
+  }
+
+  // While snapping, Up and Down in a field jump to the next or previous
+  // crossing instead of the next frame.
+  function step(e: KeyboardEvent, which: "start" | "end") {
+    if (!snapping || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault();
+    const dir = e.key === "ArrowUp" ? 1 : -1;
+    if (which === "start") start = stepZero(zeros!, start, dir, 0, end - 1) ?? start;
+    else end = stepZero(zeros!, end, dir, start + 1, last) ?? end;
   }
 
   /** Zooms by factor (below 1 zooms in), keeping file frame `at` where it is. */
@@ -190,6 +219,10 @@
         >Whole sample</button
       >
       <button type="button" class="btn primary" onclick={preview}>Play</button>
+      <label class="snap" title={zeros ? undefined : "Finding the zero crossings…"}>
+        <input type="checkbox" bind:checked={snap} disabled={!zeros} />
+        Snap to zero
+      </label>
     </div>
     <div class="points">
       <div class="point">
@@ -204,6 +237,7 @@
           value={start}
           aria-describedby="trim-start-ms"
           oninput={(e) => typed(e, "start")}
+          onkeydown={(e) => step(e, "start")}
           onchange={(e) => corrected(e, "start")}
         />
         <span id="trim-start-ms" class="ms mono">{ms(start, sample.rate)}</span>
@@ -221,6 +255,7 @@
           value={end}
           aria-describedby="trim-end-ms"
           oninput={(e) => typed(e, "end")}
+          onkeydown={(e) => step(e, "end")}
           onchange={(e) => corrected(e, "end")}
         />
         <span id="trim-end-ms" class="ms mono">{ms(end, sample.rate)}</span>
@@ -260,6 +295,18 @@
   .error {
     margin: 0;
     color: #ffb4b4;
+  }
+  .snap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: var(--soft);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .snap input {
+    accent-color: var(--accent);
   }
   /* Start and End side by side, each: label, field, time, Go to. */
   .points {
