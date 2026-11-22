@@ -19,19 +19,31 @@
     onpick,
     dropTarget = false,
     ondroppad,
+    candrop,
   }: {
     cells: Cell[]; // 16 cells in grid order, top-left first
     selected: number;
     onpick: (slot: number) => void;
     dropTarget?: boolean; // accept WAV files dropped from the system
     ondroppad?: (from: number, to: number, copy: boolean) => void; // filled cells can be dragged onto others
+    candrop?: (from: number, to: number, copy: boolean) => boolean; // false: the cursor shows no drop here
   } = $props();
+
+  function allowed(e: DragEvent, slot: number): boolean {
+    const from = draggedSlot();
+    return from === null || !candrop || candrop(from, slot, e.altKey);
+  }
 
   let over: number | null = $state(null); // cell a pad is dragged over
   let copying = $state(false); // Alt held during the drag
 
   function dragover(e: DragEvent, slot: number) {
     if (!ondroppad || !isPadDrag(e)) return;
+    if (!allowed(e, slot)) {
+      over = null; // no preventDefault: the drop is refused
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+      return;
+    }
     e.preventDefault(); // allow the drop
     copying = e.altKey;
     if (e.dataTransfer) e.dataTransfer.dropEffect = e.altKey ? "copy" : "move";
@@ -39,7 +51,7 @@
   }
 
   function drop(e: DragEvent, slot: number) {
-    if (!ondroppad || !isPadDrag(e)) return;
+    if (!ondroppad || !isPadDrag(e) || !allowed(e, slot)) return;
     e.preventDefault();
     const from = draggedSlot();
     over = null;

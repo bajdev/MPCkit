@@ -96,6 +96,12 @@ export interface Pad {
      */
     "source": string;
     "missing": boolean;
+
+    /**
+     * SharedWith lists the other pads using the same sample file: renaming
+     * it renames theirs too. Empty for an empty pad or an unshared file.
+     */
+    "sharedWith": string[] | null;
 }
 
 /**

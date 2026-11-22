@@ -26,3 +26,8 @@ updates:
     groups:
       frontend:
         patterns: ['*']
+    ignore:
+      # svelte-check (npm run check) supports TypeScript 5 and 6 only. Remove
+      # this once a svelte-check release accepts TypeScript 7.
+      - dependency-name: typescript
+        versions: ['>=7']

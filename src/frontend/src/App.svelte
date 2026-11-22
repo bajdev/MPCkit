@@ -13,6 +13,7 @@
   import SlotGrid, { type Cell } from "./lib/SlotGrid.svelte";
   import {
     app,
+    confirm,
     exportFolder,
     exportZip,
     listen,
@@ -24,7 +25,7 @@
     ui,
     type Tab,
   } from "./lib/store.svelte";
-  import { BANKS, PER_BANK, bars, gridSlots, tuneText } from "./lib/slots";
+  import { BANKS, PER_BANK, bars, gridSlots, listText, tuneText } from "./lib/slots";
 
   onMount(() => {
     refresh();
@@ -94,16 +95,84 @@
       : [],
   );
 
+  function bankSlots(bank: number): number[] {
+    return Array.from({ length: PER_BANK }, (_, i) => bank * PER_BANK + i);
+  }
+
+  // Clear bank on the Pads tab: asks first, listing the pads. The selected
+  // pad stays selected, now empty.
+  async function clearPadBank() {
+    const bank = ui.padBank;
+    const filled = bankSlots(bank)
+      .map((s) => pads[s])
+      .filter((p) => p.file !== "");
+    const noted = filled.filter((p) => p.hasNotes).map((p) => p.label);
+    const ok = await confirm({
+      title: `Clear bank ${BANKS[bank]}?`,
+      message:
+        "These pads will be emptied. There is no undo." +
+        (noted.length
+          ? ` Sequences have recorded notes for ${listText(noted)}. The notes stay, and play nothing until ${noted.length === 1 ? "that pad is" : "those pads are"} filled again.`
+          : ""),
+      items: filled.map((p) => `${p.label} ${p.name}`),
+      action: "Clear",
+    });
+    if (ok) await run(() => Service.ClearBank(bank));
+  }
+
+  // Clear bank on the Sequences tab: asks first, listing the sequences. A
+  // project keeps one sequence, so Go adds a fresh one if the bank held them all.
+  async function clearSeqBank() {
+    const bank = ui.seqBank;
+    const seqs = bankSlots(bank).flatMap((s) => seqBySlot.get(s) ?? []);
+    const noted = seqs.filter((q) => q.hasNotes).map((q) => pads[q.slot].label);
+    const first = bank * PER_BANK;
+    const fresh = seqs.length === (st?.sequenceCount ?? 0);
+    const ok = await confirm({
+      title: `Clear bank ${BANKS[bank]}?`,
+      message:
+        "These sequences will be removed. There is no undo." +
+        (noted.length
+          ? ` ${listText(noted)} ${noted.length === 1 ? "has" : "have"} recorded notes, which will be deleted too.`
+          : "") +
+        (fresh
+          ? ` A project needs one sequence, so an empty Sequence ${String(first + 1).padStart(2, "0")} is added in ${pads[first].label}.`
+          : ""),
+      items: seqs.map((q) => `${pads[q.slot].label} ${q.name}`),
+      action: "Clear",
+    });
+    if (ok) await run(() => Service.RemoveSequenceBank(bank));
+  }
+
   // Clicking a pad selects it and, if it has a sample, plays it.
   async function pickPad(slot: number) {
     ui.padSlot = slot;
     const p = pads[slot];
-    if (p?.audio) {
+    if (ui.playOnClick && p?.audio) {
       try {
         await play(p);
       } catch (e) {
         app.error = message(e);
       }
+    }
+  }
+
+  // A sequence dropped on a slot: move to an empty slot, swap onto a filled
+  // one, Alt to copy onto an empty slot only. Songs follow (checkpoint E).
+  function canDropSeq(_from: number, to: number, copy: boolean): boolean {
+    return !(copy && seqBySlot.has(to));
+  }
+
+  async function dropSeq(from: number, to: number, copy: boolean) {
+    if (!canDropSeq(from, to, copy)) return;
+    const call = copy
+      ? () => Service.CopySequence(from, to)
+      : seqBySlot.has(to)
+        ? () => Service.SwapSequences(from, to)
+        : () => Service.MoveSequence(from, to);
+    if (await run(call)) {
+      ui.seqBank = Math.floor(to / PER_BANK);
+      ui.seqSlot = to;
     }
   }
 
@@ -195,8 +264,25 @@
       <div id="view-pads" class="panels" role="tabpanel" aria-labelledby="tab-pads">
         <section class="panel grid-panel" aria-label="Pads">
           <div class="grid-head">
-            <h2 class="eyebrow">Pad bank</h2>
-            <span class="mono summary">Bank {BANKS[ui.padBank]} · {padCounts[ui.padBank]} of 16 filled</span>
+            <div class="head-start">
+              <h2 class="eyebrow">Pad bank</h2>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                aria-checked={ui.playOnClick}
+                onclick={() => (ui.playOnClick = !ui.playOnClick)}
+              >
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                Play on click
+              </button>
+            </div>
+            <div class="head-end">
+              <span class="mono summary">Bank {BANKS[ui.padBank]} · {padCounts[ui.padBank]} of 16 filled</span>
+              <button type="button" class="head-btn" disabled={padCounts[ui.padBank] === 0} onclick={clearPadBank}
+                >Clear bank</button
+              >
+            </div>
           </div>
           <BankBar
             bank={ui.padBank}
@@ -207,11 +293,13 @@
               ui.padSlot = b * PER_BANK;
             }}
             ondragbank={(b) => (ui.padBank = b)}
+            fileDrop
           />
           <SlotGrid cells={padCells} selected={ui.padSlot} onpick={pickPad} dropTarget ondroppad={dropPad} />
           <p class="hint grid-hint">
-            Click a pad to select and hear it. Drag a pad to move it, drag onto a filled pad to swap, hold Alt while
-            dragging to copy. Drag over a bank letter to reach another bank. Drop a WAV file on any pad to assign it.
+            {ui.playOnClick ? "Click a pad to select and hear it." : "Click a pad to select it."} Drag a pad to move it, drag
+            onto a filled pad to swap, hold Alt while dragging to copy. Drag over a bank letter to reach another bank. Drop
+            a WAV file on a pad to assign it, or several files or a folder on an empty bank to fill it.
           </p>
         </section>
         <PadPanel pad={pads[ui.padSlot]} limits={st.limits} />
@@ -221,7 +309,12 @@
         <section class="panel grid-panel" aria-label="Sequence slots">
           <div class="grid-head">
             <h2 class="eyebrow">Sequence bank</h2>
-            <span class="mono summary">Bank {BANKS[ui.seqBank]} · {seqCounts[ui.seqBank]} of 16 used</span>
+            <div class="head-end">
+              <span class="mono summary">Bank {BANKS[ui.seqBank]} · {seqCounts[ui.seqBank]} of 16 used</span>
+              <button type="button" class="head-btn" disabled={seqCounts[ui.seqBank] === 0} onclick={clearSeqBank}
+                >Clear bank</button
+              >
+            </div>
           </div>
           <BankBar
             bank={ui.seqBank}
@@ -231,10 +324,18 @@
               ui.seqBank = b;
               ui.seqSlot = b * PER_BANK;
             }}
+            ondragbank={(b) => (ui.seqBank = b)}
           />
-          <SlotGrid cells={seqCells} selected={ui.seqSlot} onpick={(s) => (ui.seqSlot = s)} />
+          <SlotGrid
+            cells={seqCells}
+            selected={ui.seqSlot}
+            onpick={(s) => (ui.seqSlot = s)}
+            ondroppad={dropSeq}
+            candrop={canDropSeq}
+          />
           <p class="hint grid-hint">
             Each pad is one sequence slot, {st.limits.maxSequences} in total. Click an empty slot to add a sequence there.
+            Drag a sequence to move it, onto another to swap them, with Alt to copy.
           </p>
         </section>
         <SequencePanel slot={ui.seqSlot} seq={seqBySlot.get(ui.seqSlot)} limits={st.limits} />
@@ -370,6 +471,80 @@
   .summary {
     font-size: 12px;
     color: var(--muted);
+  }
+  .head-start {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  /* "Play on click": as small as Clear bank, so the row is no taller. */
+  .switch {
+    margin: -4px 0;
+    padding: 3px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 0;
+    color: var(--soft);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .switch:hover {
+    color: var(--text);
+  }
+  .track {
+    position: relative;
+    width: 26px;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--raised);
+    border: 1px solid var(--edge);
+  }
+  .thumb {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: left 0.1s;
+  }
+  .switch[aria-checked="true"] .track {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .switch[aria-checked="true"] .thumb {
+    left: 13px;
+    background: var(--on-accent);
+  }
+  .head-end {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  /* Small, so the header row is no taller: the negative margin gives back
+     what the padding and border add. */
+  .head-btn {
+    margin: -4px 0;
+    padding: 3px 8px;
+    background: var(--raised);
+    color: var(--soft);
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .head-btn:hover:not(:disabled) {
+    color: var(--text);
+  }
+  .head-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   footer {
     flex: none;

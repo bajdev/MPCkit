@@ -12,8 +12,10 @@ import type * as app$0 from "../../../../bajdev/MPCkit/internal/app/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "bank": number;
             "close": void;
             "error": string;
+            "notice": string;
             "state": app$0.State;
         }
     }

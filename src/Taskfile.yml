@@ -8,7 +8,7 @@ vars:
   # Keep APP_VERSION in step with `version` in build/config.yml.
   # A VERSION variable (CI passes the tag without its "v") overrides it in
   # the build flags of build/<os>/Taskfile.yml.
-  APP_VERSION: "0.5.5"
+  APP_VERSION: "0.5.6"
   COMMIT:
     sh: git describe --always --dirty --exclude "*" 2>/dev/null || echo unknown
   BIN_DIR: "bin"

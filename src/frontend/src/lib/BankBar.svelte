@@ -8,12 +8,14 @@
     what,
     onpick,
     ondragbank,
+    fileDrop = false,
   }: {
     bank: number;
     counts: number[]; // filled slots per bank
     what: string; // "pads filled", "slots used"
     onpick: (bank: number) => void;
     ondragbank?: (bank: number) => void; // a pad dragged over a bank button
+    fileDrop?: boolean; // files or a folder dropped on a bank letter fill that bank (Go handles the drop)
   } = $props();
 </script>
 
@@ -24,6 +26,8 @@
       class:on={i === bank}
       aria-pressed={i === bank}
       aria-label="Bank {letter}, {counts[i]} of {PER_BANK} {what}"
+      data-file-drop-target={fileDrop ? "" : undefined}
+      data-bank={fileDrop ? i : undefined}
       onclick={() => onpick(i)}
       ondragover={(e) => {
         // Dragging a pad over a bank shows that bank, to drop on its pads.
@@ -58,5 +62,10 @@
     background: var(--accent);
     color: var(--on-accent);
     border-color: var(--accent);
+  }
+  /* Files dragged over a bank letter, as over a pad (SlotGrid). */
+  button:global(.file-drop-target-active) {
+    border-color: var(--accent);
+    background: rgba(245, 165, 36, 0.12);
   }
 </style>

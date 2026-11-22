@@ -17,7 +17,7 @@ import (
 )
 
 // Version and Commit are set by production builds (Taskfile.yml) with
-// -ldflags "-X github.com/bajdev/MPCkit/internal/app.Version=0.5.5
+// -ldflags "-X github.com/bajdev/MPCkit/internal/app.Version=0.5.6
 // -X github.com/bajdev/MPCkit/internal/app.Commit=2354f57".
 var (
 	Version = "dev"
@@ -48,6 +48,9 @@ type Pad struct {
 	// when that file no longer exists.
 	Source  string `json:"source"`
 	Missing bool   `json:"missing"`
+	// SharedWith lists the other pads using the same sample file: renaming
+	// it renames theirs too. Empty for an empty pad or an unshared file.
+	SharedWith []string `json:"sharedWith"`
 }
 
 // Sequence is one existing sequence.
@@ -221,6 +224,7 @@ func (s *Service) About() About {
 func (s *Service) state() State {
 	proj := s.p
 	missing := missingSources(proj)
+	users := proj.FileUsers()
 	st := State{
 		Name:         proj.Name,
 		Dirty:        proj.Dirty(),
@@ -231,7 +235,7 @@ func (s *Service) state() State {
 		Limits:       limits(),
 	}
 	for slot := 0; slot < project.Pads; slot++ {
-		st.Pads = append(st.Pads, padState(proj, slot, missing))
+		st.Pads = append(st.Pads, padState(proj, slot, missing, users))
 	}
 	st.SequenceCount = len(st.Sequences)
 	return st
@@ -267,22 +271,23 @@ func missingSources(proj *project.Project) map[string]bool {
 }
 
 // padState describes the pad in slot. missing is from missingSources.
-func padState(proj *project.Project, slot int, missing map[string]bool) Pad {
+func padState(proj *project.Project, slot int, missing map[string]bool, users map[string][]int) Pad {
 	view, err := proj.Pad(slot)
 	if err != nil {
 		// A loaded file with an odd pad; show it as empty.
-		return Pad{Slot: slot, Label: project.SlotName(slot)}
+		return Pad{Slot: slot, Label: project.SlotName(slot), SharedWith: []string{}}
 	}
 	pad := Pad{
-		Slot:      slot,
-		Label:     project.SlotName(slot),
-		Name:      view.SampleName,
-		File:      view.File,
-		Coarse:    view.Coarse,
-		Fine:      view.Fine,
-		MuteGroup: view.MuteGroup,
-		Start:     view.Start,
-		End:       view.End,
+		Slot:       slot,
+		Label:      project.SlotName(slot),
+		Name:       view.SampleName,
+		File:       view.File,
+		Coarse:     view.Coarse,
+		Fine:       view.Fine,
+		MuteGroup:  view.MuteGroup,
+		Start:      view.Start,
+		End:        view.End,
+		SharedWith: []string{}, // [] rather than null in the frontend
 	}
 	if view.Empty() {
 		return pad
@@ -290,6 +295,11 @@ func padState(proj *project.Project, slot int, missing map[string]bool) Pad {
 	pad.HasNotes = proj.PadHasNotes(slot)
 	pad.Source, _ = proj.Source(view.File)
 	pad.Missing = missing[view.File]
+	for _, other := range users[view.File] {
+		if other != slot {
+			pad.SharedWith = append(pad.SharedWith, project.SlotName(other))
+		}
+	}
 	if !pad.Missing {
 		pad.Audio = audioURL(slot, pad.Source)
 	}
@@ -352,6 +362,11 @@ func (s *Service) ClearPad(slot int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.ClearPad(slot) })
 }
 
+// ClearBank clears every pad of bank (0 for A to 7 for H).
+func (s *Service) ClearBank(bank int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.ClearBank(bank) })
+}
+
 // SetTune sets a pad's tuning in semitones and cents.
 func (s *Service) SetTune(slot, coarse, fine int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.SetTune(slot, coarse, fine) })
@@ -361,6 +376,13 @@ func (s *Service) SetTune(slot, coarse, fine int) (State, error) {
 // sample file.
 func (s *Service) SetTrim(slot int, start, end int64) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.SetTrim(slot, start, end) })
+}
+
+// RenameSample gives a pad's sample a new file name, typed without the
+// extension. Every pad using the file gets it; the file on disk keeps its
+// own name.
+func (s *Service) RenameSample(slot int, name string) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.RenameSample(slot, name) })
 }
 
 // SetMuteGroup sets a pad's mute group; 0 is off.
@@ -502,6 +524,29 @@ func (s *Service) AddSequence(slot int) (State, error) {
 // sequence cannot be removed.
 func (s *Service) RemoveSequence(slot int) (State, error) {
 	return s.apply(func(p *project.Project) error { return p.RemoveSequence(slot) })
+}
+
+// RemoveSequenceBank removes every sequence of bank (0 for A to 7 for H). If
+// the bank held them all, one fresh sequence is left in its first slot.
+func (s *Service) RemoveSequenceBank(bank int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.RemoveSequenceBank(bank) })
+}
+
+// MoveSequence moves a sequence to an empty slot. Songs and the current
+// sequence follow it.
+func (s *Service) MoveSequence(from, to int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.MoveSequence(from, to) })
+}
+
+// SwapSequences exchanges two sequences. Songs and the current sequence
+// follow them.
+func (s *Service) SwapSequences(a, b int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.SwapSequences(a, b) })
+}
+
+// CopySequence copies a sequence, notes included, to an empty slot.
+func (s *Service) CopySequence(from, to int) (State, error) {
+	return s.apply(func(p *project.Project) error { return p.CopySequence(from, to) })
 }
 
 // SetSequence sets a sequence's name, BPM and length in bars. Notes past a

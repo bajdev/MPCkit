@@ -9,6 +9,11 @@ import type {} from "../github.com/wailsapp/wails/v3/internal/eventdata.js";
 import "../github.com/wailsapp/wails/v3/internal/eventcreate.js";
 
 /**
+ * Name of the custom event "bank".
+ */
+export const Bank = "bank";
+
+/**
  * Name of the custom event "close".
  */
 export const Close = "close";
@@ -17,6 +22,11 @@ export const Close = "close";
  * Name of the custom event "error".
  */
 export const Error = "error";
+
+/**
+ * Name of the custom event "notice".
+ */
+export const Notice = "notice";
 
 /**
  * Name of the custom event "state".

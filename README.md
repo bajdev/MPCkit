@@ -1,5 +1,15 @@
 # MPCkit
 
+[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/bajdev/MPCkit?include_prereleases&sort=semver)](https://github.com/bajdev/MPCkit/releases)
+[![License: MIT](https://img.shields.io/github/license/bajdev/MPCkit)](LICENSE)
+[![Status: beta](https://img.shields.io/badge/status-beta-orange)](#mpckit)
+
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+[![Go](https://img.shields.io/github/go-mod/go-version/bajdev/MPCkit?filename=src%2Fgo.mod)](src/go.mod)
+[![Wails v3](https://img.shields.io/badge/Wails-v3-df0000)](https://v3.wails.io)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00?logo=svelte&logoColor=white)](https://svelte.dev)
+
 **Build Akai MPC Sample projects on your computer.**
 
 Drop WAV files onto pads, tune them, set mute groups and sequences, then export a project the MPC Sample opens as it is. MPCkit can also open a project saved on the device, so you can change it on a bigger screen and send it back.
@@ -8,17 +18,18 @@ Drop WAV files onto pads, tune them, set mute groups and sequences, then export 
 
 > **Beta.** MPCkit is in testing (version 0.5). Expect a few rough edges, and keep a copy of any project you care about before opening it in MPCkit.
 
-![The MPCkit window on the Pads tab: bank A with ten drum samples, and the settings for pad A1 on the right](docs/images/pads.png)
+![The MPCkit window on the Pads tab: bank A with ten drum samples, the Play on click switch and Clear bank above them, and the settings for pad A1 on the right, starting with its sample name, ready to rename](docs/images/pads.png)
 
 ## Features
 
-- **Pads and banks.** All 128 pads, in eight banks of 16. Drop a WAV file on a pad to assign it, click a pad to hear it, and drag pads to move, swap or copy them.
+- **Pads and banks.** All 128 pads, in eight banks of 16. Drop a WAV file on a pad to assign it, or drop several files or a folder on an empty bank to fill its 16 pads, in name order. Click a pad to hear it, or turn off **Play on click** to select pads without a sound. Drag pads to move, swap or copy them, and clear a whole bank in one step.
+- **Sample names.** Rename a pad's sample in Pad settings to give it a clearer name on the device. Only the copy in the exported project gets the new name; your original file is never changed.
 - **Tuning and mute groups.** Tune each pad by up to 24 semitones and 90 cents either way. Put pads in mute groups so they cut each other off, as on the device.
-- **Sequences.** Up to 128 sequences, each with a name, a tempo (20–999 BPM) and a length in bars. You record the notes on the device.
+- **Sequences.** Up to 128 sequences, each with a name, a tempo (20–999 BPM) and a length in bars. You record the notes on the device. Drag a sequence to move it, onto another to swap them, or with Alt to copy it; songs made on the device keep playing the same sequences. Remove a whole bank of sequences in one step.
 - **Open and export.** Open a project saved on the device, change it, and export it to a folder (for example straight onto the card) or to a zip.
 - **Small, native and offline.** One small app for Windows, macOS and Linux. No installer, no account and no tracking. MPCkit never connects to the internet: your samples and projects stay on your computer.
 
-![The MPCkit window on the Sequences tab: six sequences in bank A, with the name, BPM and length of the selected one on the right](docs/images/sequences.png)
+![The MPCkit window on the Sequences tab: six sequences in bank A with Clear bank above them, and the name, BPM and length of the selected one on the right](docs/images/sequences.png)
 
 Not in MPCkit yet: trimming samples with a waveform, level and pan, loop and trigger modes, effects, and editing recorded notes.
 
@@ -76,8 +87,6 @@ docs/     project file format notes, plans and screenshots
 ```
 
 Pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-[![Build](https://github.com/bajdev/MPCkit/actions/workflows/build.yml/badge.svg)](https://github.com/bajdev/MPCkit/actions/workflows/build.yml)
 
 ## License and disclaimer
 

@@ -637,10 +637,11 @@ func TestLinkedFileIsMissing(t *testing.T) {
 func TestBoundMethods(t *testing.T) {
 	want := []string{
 		"About", "AddSequence", "AssignSampleDialog", "CancelExport",
-		"ChooseExportFolder", "ChooseZipPath", "ClearPad", "CloseWindow",
-		"CopyPad", "ExportFolder", "ExportZip", "Load", "MovePad", "New",
-		"RemoveSequence", "SetMuteGroup", "SetName", "SetSequence", "SetTrim",
-		"SetTune", "State", "SwapPads",
+		"ChooseExportFolder", "ChooseZipPath", "ClearBank", "ClearPad", "CloseWindow",
+		"CopyPad", "CopySequence", "ExportFolder", "ExportZip", "Load", "MovePad",
+		"MoveSequence", "New", "RemoveSequence", "RemoveSequenceBank", "RenameSample",
+		"SetMuteGroup", "SetName", "SetSequence", "SetTrim", "SetTune", "State", "SwapPads",
+		"SwapSequences",
 	}
 	typ := reflect.TypeOf(&Service{})
 	var got []string
@@ -688,5 +689,98 @@ func TestSetTrimThroughService(t *testing.T) {
 	st, err = s.SetTrim(0, 0, 999999)
 	if err == nil || st.Pads[0].Start != 328 || st.Pads[0].End != 3777 {
 		t.Errorf("refused trim: %v, pad %+v", err, st.Pads[0])
+	}
+}
+
+func TestRenameSampleThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := hostOf(s).AssignSamplePath(0, filepath.Join(kickDir, "Linn 9000 kick.wav"))
+	must(t, err)
+	st, err := s.CopyPad(0, 17)
+	must(t, err)
+	if got := st.Pads[0].SharedWith; len(got) != 1 || got[0] != "B2" {
+		t.Errorf("A1 sharedWith %q, want [B2]", got)
+	}
+	if got := st.Pads[1].SharedWith; got == nil || len(got) != 0 {
+		t.Errorf("empty pad sharedWith %#v, want an empty list", got)
+	}
+	st, err = s.RenameSample(17, "Big kick")
+	must(t, err)
+	if st.Pads[0].File != "Big kick.wav" || st.Pads[17].Name != "Big kick" || !st.Dirty {
+		t.Errorf("A1 %q, B2 %q, dirty %v", st.Pads[0].File, st.Pads[17].Name, st.Dirty)
+	}
+	if got := st.Pads[17].SharedWith; len(got) != 1 || got[0] != "A1" {
+		t.Errorf("B2 sharedWith %q, want [A1]", got)
+	}
+	// A refused name still returns the state, unchanged.
+	st, err = s.RenameSample(0, "big?kick")
+	if err == nil || st.Pads[0].File != "Big kick.wav" {
+		t.Errorf("refused rename: %v, A1 %q", err, st.Pads[0].File)
+	}
+}
+
+func TestClearBankThroughService(t *testing.T) {
+	s, _ := newService()
+	kick := filepath.Join(kickDir, "Linn 9000 kick.wav")
+	for _, slot := range []int{0, 5, 16} {
+		_, err := hostOf(s).AssignSamplePath(slot, kick)
+		must(t, err)
+	}
+	st, err := s.ClearBank(0)
+	must(t, err)
+	if st.Pads[0].File != "" || st.Pads[5].File != "" || st.Pads[16].File == "" || st.SampleCount != 1 {
+		t.Errorf("A1 %q, A6 %q, B1 %q, %d samples", st.Pads[0].File, st.Pads[5].File, st.Pads[16].File, st.SampleCount)
+	}
+	// A bad bank still returns the state, unchanged.
+	st, err = s.ClearBank(8)
+	if err == nil || st.Pads[16].File == "" {
+		t.Errorf("bank 8: %v", err)
+	}
+}
+
+func TestRemoveSequenceBankThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := s.AddSequence(20)
+	must(t, err)
+	st, err := s.RemoveSequenceBank(0)
+	must(t, err)
+	if st.SequenceCount != 1 || st.Sequences[0].Slot != 20 {
+		t.Errorf("bank A: %+v", st.Sequences)
+	}
+	// Bank B now holds the only sequence: a fresh one is left in B1.
+	st, err = s.RemoveSequenceBank(1)
+	must(t, err)
+	if st.SequenceCount != 1 || st.Sequences[0] != (Sequence{Slot: 16, Label: "B1", Name: "Sequence 17", BPM: 120, Bars: 2}) {
+		t.Errorf("bank B: %+v", st.Sequences)
+	}
+	st, err = s.RemoveSequenceBank(-1)
+	if err == nil || st.SequenceCount != 1 {
+		t.Errorf("bank -1: %v", err)
+	}
+}
+
+func TestSequenceMovesThroughService(t *testing.T) {
+	s, _ := newService()
+	_, err := s.AddSequence(1)
+	must(t, err)
+	st, err := s.MoveSequence(1, 40)
+	must(t, err)
+	if st.SequenceCount != 2 || st.Sequences[1].Slot != 40 || st.Sequences[1].Label != "C9" || !st.Dirty {
+		t.Errorf("move: %+v", st.Sequences)
+	}
+	st, err = s.SwapSequences(0, 40)
+	must(t, err)
+	if st.Sequences[0].Name != "Sequence 02" || st.Sequences[1].Name != "Sequence 01" {
+		t.Errorf("swap: %+v", st.Sequences)
+	}
+	st, err = s.CopySequence(0, 127)
+	must(t, err)
+	if st.SequenceCount != 3 || st.Sequences[2].Slot != 127 || st.Sequences[2].Name != "Sequence 02" {
+		t.Errorf("copy: %+v", st.Sequences)
+	}
+	// A refused move still returns the state, unchanged.
+	st, err = s.MoveSequence(5, 6)
+	if err == nil || st.SequenceCount != 3 {
+		t.Errorf("move from an empty slot: %v", err)
 	}
 }

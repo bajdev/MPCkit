@@ -4,6 +4,7 @@
 import { Events } from "@wailsio/runtime";
 import { EventNames, Service, type ExportResult, type State } from "./api";
 import { stopAll } from "./audio";
+import { PER_BANK } from "./slots";
 
 export type Tab = "pads" | "sequences";
 
@@ -34,6 +35,7 @@ export const ui = $state({
   confirm: null as Confirm | null,
   picker: null as Picker | null,
   trim: null as number | null, // slot whose start/end dialog is open
+  playOnClick: true, // "Play on click" on the Pads tab; on at every start
 });
 
 export function message(e: unknown): string {
@@ -114,6 +116,16 @@ export function listen(): () => void {
   const offError = Events.On(EventNames.Error, (e) => {
     app.error = e.data;
   });
+  const offNotice = Events.On(EventNames.Notice, (e) => {
+    app.notice = e.data;
+  });
+  // Files dropped on a bank: show it, with its first pad selected, as
+  // picking the bank does.
+  const offBank = Events.On(EventNames.Bank, (e) => {
+    ui.tab = "pads";
+    ui.padBank = e.data;
+    ui.padSlot = e.data * PER_BANK;
+  });
   // The window's close button, with unsaved changes: Go waits for us.
   const offClose = Events.On(EventNames.Close, async () => {
     if (ui.confirm) return; // already asking something
@@ -128,6 +140,8 @@ export function listen(): () => void {
   return () => {
     offState();
     offError();
+    offNotice();
+    offBank();
     offClose();
   };
 }

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -521,5 +522,93 @@ func TestTrimSurvivesExport(t *testing.T) {
 	must(t, err)
 	if loop, _ := n.Int(); loop != 100 {
 		t.Errorf("reloaded LoopStart %d, want 100", loop)
+	}
+}
+
+func TestRenameSurvivesExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "Demo02.xpj"))
+	must(t, err)
+	src, ok := p.Source("Linn 9000 kick.wav")
+	if !ok {
+		t.Fatal("no source for Linn 9000 kick.wav")
+	}
+	info, err := os.Stat(src)
+	must(t, err)
+	srcBytes := readFile(t, src)
+
+	must(t, p.RenameSample(0, "Big kick"))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+
+	got := listDir(t, filepath.Join(filepath.Dir(path), "Demo02"+project.DataSuffix))
+	if strings.Join(got, "|") != "Big kick.wav|Linn 9000 kick001.wav" {
+		t.Errorf("data folder holds %v", got)
+	}
+	q, _, err := project.Load(path)
+	must(t, err)
+	if v, err := q.Pad(0); err != nil || v.File != "Big kick.wav" || v.SampleName != "Big kick" {
+		t.Errorf("reloaded A1 %+v, %v", v, err)
+	}
+	// The source file is read, never written, renamed or moved.
+	after, err := os.Stat(src)
+	must(t, err)
+	if !bytes.Equal(readFile(t, src), srcBytes) || !after.ModTime().Equal(info.ModTime()) || after.Name() != "Linn 9000 kick.wav" {
+		t.Error("the source file changed")
+	}
+}
+
+// A project with bank A cleared and its sequences removed loads back as it
+// was exported.
+func TestClearedBankSurvivesExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "DemoFile.xpj"))
+	must(t, err)
+	must(t, p.ClearBank(0))
+	must(t, p.RemoveSequenceBank(0))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+	q, _, err := project.Load(path)
+	must(t, err)
+	for slot := 0; slot < project.Pads; slot++ {
+		a, err := p.Pad(slot)
+		must(t, err)
+		b, err := q.Pad(slot)
+		must(t, err)
+		if a != b {
+			t.Errorf("pad %d reloaded as %+v, want %+v", slot, b, a)
+		}
+	}
+	if a, b := fmt.Sprint(p.Sequences()), fmt.Sprint(q.Sequences()); a != b {
+		t.Errorf("sequences reloaded as %s, want %s", b, a)
+	}
+	if a, b := p.PoolFiles(), q.PoolFiles(); !slices.Equal(a, b) {
+		t.Errorf("pool reloaded as %q, want %q", b, a)
+	}
+}
+
+// Moved, swapped and copied sequences load back as they were exported,
+// with the song following them.
+func TestSequenceMovesSurviveExport(t *testing.T) {
+	p, _, err := project.Load(filepath.Join(testdata, "device", "DemoSeqMove.xpj"))
+	must(t, err)
+	must(t, p.MoveSequence(1, 40))
+	must(t, p.SwapSequences(0, 2))
+	must(t, p.CopySequence(40, 127))
+	path, err := Folder(p, t.TempDir(), false)
+	must(t, err)
+	q, _, err := project.Load(path)
+	must(t, err)
+	if a, b := fmt.Sprint(p.Sequences()), fmt.Sprint(q.Sequences()); a != b {
+		t.Errorf("sequences reloaded as %s, want %s", b, a)
+	}
+	d, err := q.File().Data()
+	must(t, err)
+	items, err := d.Get("songs[0].items")
+	must(t, err)
+	var song []string
+	for _, it := range items.Items {
+		song = append(song, it.Lookup("item.sequenceIndex").Text)
+	}
+	if got := strings.Join(song, " "); got != "2 40 0 40" {
+		t.Errorf("song slots %s, want 2 40 0 40", got)
 	}
 }

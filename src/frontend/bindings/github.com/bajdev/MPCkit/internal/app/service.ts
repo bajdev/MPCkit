@@ -67,6 +67,13 @@ export function ChooseZipPath(): $CancellablePromise<string> {
 }
 
 /**
+ * ClearBank clears every pad of bank (0 for A to 7 for H).
+ */
+export function ClearBank(bank: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(292002447, bank);
+}
+
+/**
  * ClearPad empties the pad in slot.
  */
 export function ClearPad(slot: number): $CancellablePromise<$models.State> {
@@ -86,6 +93,13 @@ export function CloseWindow(): $CancellablePromise<void> {
  */
 export function CopyPad($from: number, to: number): $CancellablePromise<$models.State> {
     return $Call.ByID(231274946, $from, to);
+}
+
+/**
+ * CopySequence copies a sequence, notes included, to an empty slot.
+ */
+export function CopySequence($from: number, to: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(108615584, $from, to);
 }
 
 /**
@@ -122,6 +136,14 @@ export function MovePad($from: number, to: number): $CancellablePromise<$models.
 }
 
 /**
+ * MoveSequence moves a sequence to an empty slot. Songs and the current
+ * sequence follow it.
+ */
+export function MoveSequence($from: number, to: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(3194925840, $from, to);
+}
+
+/**
  * New replaces the current project with a new, empty one.
  */
 export function New(): $CancellablePromise<$models.State> {
@@ -134,6 +156,23 @@ export function New(): $CancellablePromise<$models.State> {
  */
 export function RemoveSequence(slot: number): $CancellablePromise<$models.State> {
     return $Call.ByID(1152874213, slot);
+}
+
+/**
+ * RemoveSequenceBank removes every sequence of bank (0 for A to 7 for H). If
+ * the bank held them all, one fresh sequence is left in its first slot.
+ */
+export function RemoveSequenceBank(bank: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(2688849815, bank);
+}
+
+/**
+ * RenameSample gives a pad's sample a new file name, typed without the
+ * extension. Every pad using the file gets it; the file on disk keeps its
+ * own name.
+ */
+export function RenameSample(slot: number, name: string): $CancellablePromise<$models.State> {
+    return $Call.ByID(1709048904, slot, name);
 }
 
 /**
@@ -185,4 +224,12 @@ export function State(): $CancellablePromise<$models.State> {
  */
 export function SwapPads(a: number, b: number): $CancellablePromise<$models.State> {
     return $Call.ByID(4250369653, a, b);
+}
+
+/**
+ * SwapSequences exchanges two sequences. Songs and the current sequence
+ * follow them.
+ */
+export function SwapSequences(a: number, b: number): $CancellablePromise<$models.State> {
+    return $Call.ByID(4043589411, a, b);
 }

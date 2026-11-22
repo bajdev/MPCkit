@@ -2,10 +2,43 @@
   import { Service, type Limits, type Pad } from "./api";
   import { play } from "./audio";
   import { app, message, run, ui } from "./store.svelte";
-  import { signed } from "./slots";
+  import { listText, signed, splitExt } from "./slots";
 
   // Settings for the selected pad.
   let { pad, limits }: { pad: Pad; limits: Limits } = $props();
+
+  // The sample's name without its extension, editable. It follows the pad
+  // and the file name, but keeps what was typed when a rename is refused.
+  const parts = $derived(splitExt(pad.file));
+  let name = $state("");
+  let shown = "";
+  $effect.pre(() => {
+    const key = pad.slot + "/" + pad.file;
+    if (key !== shown) {
+      shown = key;
+      name = parts[0];
+    }
+  });
+  const changed = $derived(name.trim() !== parts[0]);
+  const nameNote = $derived(
+    "Only the copy in exported projects gets this name." +
+      (pad.sharedWith?.length ? ` Also used by ${listText(pad.sharedWith)}, so the new name applies there too.` : ""),
+  );
+
+  function rename() {
+    const slot = pad.slot;
+    const typed = name;
+    run(() => Service.RenameSample(slot, typed));
+  }
+
+  function nameKey(e: KeyboardEvent) {
+    if (e.key === "Enter" && changed) {
+      e.preventDefault();
+      rename(); // an empty name is sent too, so Go says why it is refused
+    } else if (e.key === "Escape") {
+      name = parts[0];
+    }
+  }
 
   // Slider values follow the pad, and track the thumb while it is dragged;
   // Go is told when it is let go.
@@ -26,7 +59,7 @@
     const slot = pad.slot;
     if (await run(() => Service.SetTune(slot, coarse, fine))) {
       const p = app.state?.pads?.[slot];
-      if (p) preview(p); // hear the new tuning
+      if (p && ui.playOnClick) preview(p); // hear the new tuning
     }
   }
 </script>
@@ -34,10 +67,34 @@
 <section class="panel settings" aria-label="Pad settings">
   <div class="panel-head">
     <div class="slot-id">{pad.label}</div>
-    <div class="title">
-      <h2 class="eyebrow">Pad settings</h2>
-      <div>{pad.file || "Empty"}</div>
-    </div>
+    {#if pad.file === ""}
+      <div class="title">
+        <h2 class="eyebrow">Pad settings</h2>
+        <div>Empty</div>
+      </div>
+    {:else}
+      <!-- The name field takes the heading's line, so the panel is no taller. -->
+      <h2 class="visually-hidden">Pad settings</h2>
+      <div class="rename">
+        <label class="visually-hidden" for="sample-name">Sample name</label>
+        <input
+          id="sample-name"
+          class="field"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+          title={nameNote}
+          aria-describedby="sample-name-note"
+          bind:value={name}
+          onkeydown={nameKey}
+        />
+        <span class="ext mono" aria-hidden="true">{parts[1]}</span>
+        <button type="button" class="btn secondary" disabled={!changed || name.trim() === ""} onclick={rename}
+          >Rename</button
+        >
+        <span id="sample-name-note" class="visually-hidden">{parts[1]} file. {nameNote}</span>
+      </div>
+    {/if}
   </div>
 
   {#if pad.file === ""}
@@ -171,6 +228,36 @@
   }
   .notes {
     color: var(--accent);
+  }
+  /* Name, extension and button on one line, no taller than the pad label. */
+  .rename {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rename .field {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    font-weight: 600;
+  }
+  .rename .btn {
+    height: 36px;
+    padding: 0 12px;
+  }
+  .ext {
+    color: var(--muted);
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .missing {
     display: flex;

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bajdev/MPCkit/internal/app"
 	"github.com/bajdev/MPCkit/internal/export"
 	"github.com/bajdev/MPCkit/internal/project"
 )
@@ -95,11 +96,18 @@ func init() {
 		{"mute", "set a pad's mute group: `PAD=GROUP` (0 is off)", parseMuteOp},
 		{"trim", "set where a pad's sample starts and ends, in frames: `PAD=START:END` (e.g. A1=100:2000)", parseTrimOp},
 		{"clear", "clear a pad: `PAD`", parseClearOp},
+		{"rename", "rename a pad's sample in exports, without .wav: `PAD=NAME` (e.g. A1=Big kick)", parseRenameOp},
+		{"fill", "fill an empty bank with a folder's WAV files, or one WAV: `BANK=PATH` (e.g. C=kicks)", parseFillOp},
 		{"copy", "copy pads: `FROM:TO`", parseCopyOp},
 		{"move", "move pads: `FROM:TO`", parseMoveOp},
 		{"swap", "swap pads: `FROM:TO`", parseSwapOp},
 		{"seq", "set a sequence, adding it if needed: `N=NAME,BPM,BARS` (N is 1-128)", parseSeqOp},
 		{"rmseq", "remove a sequence: `N`", parseRmseqOp},
+		{"clearbank", "clear every pad of a bank: `BANK` (A-H)", parseClearBankOp},
+		{"rmseqbank", "remove every sequence of a bank, keeping one if it held them all: `BANK` (A-H)", parseRmseqBankOp},
+		{"moveseq", "move a sequence to an empty slot; songs follow it: `FROM:TO` (e.g. A2:C9)", parseMoveseqOp},
+		{"swapseq", "swap two sequences; songs follow them: `A:B` (e.g. A1:A3)", parseSwapseqOp},
+		{"copyseq", "copy a sequence to an empty slot: `FROM:TO` (e.g. C9:H16)", parseCopyseqOp},
 	} {
 		addOp(f.name, f.usage, f.parse)
 	}
@@ -176,6 +184,51 @@ func parseTrimOp(arg string) (opFunc, error) {
 		return nil, errors.New("start and end must be whole numbers of frames")
 	}
 	return func(p *project.Project) error { return p.SetTrim(slot, start, end) }, nil
+}
+
+// parseFillOp reads -fill BANK=PATH. PATH is a WAV file or a folder; the
+// bank must be empty. It prints the same message as the window: what was
+// assigned on standard output, files that could not be used on standard
+// error.
+func parseFillOp(arg string) (opFunc, error) {
+	letter, path, ok := strings.Cut(arg, "=")
+	bank, err := parseBank(letter)
+	if !ok || path == "" || err != nil {
+		return nil, errors.New("want BANK=PATH, with BANK A-H")
+	}
+	return func(p *project.Project) error {
+		files, _ := project.GatherWAVs([]string{path})
+		if len(files) == 0 {
+			return app.ErrNoWAVs
+		}
+		res, err := p.FillBank(bank, files)
+		if err != nil {
+			return err
+		}
+		notice, problems := app.FillMessage(bank, res)
+		if notice == "" {
+			return errors.New(problems)
+		}
+		fmt.Println(notice)
+		if problems != "" {
+			fmt.Fprintln(os.Stderr, problems)
+		}
+		return nil
+	}, nil
+}
+
+// parseRenameOp reads -rename PAD=NAME. NAME is the new file name without
+// its extension; the file on disk keeps its own name.
+func parseRenameOp(arg string) (opFunc, error) {
+	label, name, ok := strings.Cut(arg, "=")
+	if !ok {
+		return nil, errors.New("want PAD=NAME")
+	}
+	slot, err := parseSlot(label)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.RenameSample(slot, name) }, nil
 }
 
 // parseClearOp reads -clear PAD.
@@ -259,6 +312,60 @@ func parseRmseqOp(arg string) (opFunc, error) {
 		return nil, err
 	}
 	return func(p *project.Project) error { return p.RemoveSequence(slot) }, nil
+}
+
+// parseBank reads a bank letter, A-H, as 0-7.
+func parseBank(arg string) (int, error) {
+	letter := strings.ToUpper(strings.TrimSpace(arg))
+	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'H' {
+		return 0, fmt.Errorf("bad bank %q: want A-H", arg)
+	}
+	return int(letter[0] - 'A'), nil
+}
+
+// parseClearBankOp reads -clearbank BANK.
+func parseClearBankOp(arg string) (opFunc, error) {
+	bank, err := parseBank(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.ClearBank(bank) }, nil
+}
+
+// parseRmseqBankOp reads -rmseqbank BANK.
+func parseRmseqBankOp(arg string) (opFunc, error) {
+	bank, err := parseBank(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.RemoveSequenceBank(bank) }, nil
+}
+
+// parseMoveseqOp reads -moveseq FROM:TO, slots written as on the grid.
+func parseMoveseqOp(arg string) (opFunc, error) {
+	from, to, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.MoveSequence(from, to) }, nil
+}
+
+// parseSwapseqOp reads -swapseq A:B.
+func parseSwapseqOp(arg string) (opFunc, error) {
+	a, b, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.SwapSequences(a, b) }, nil
+}
+
+// parseCopyseqOp reads -copyseq FROM:TO.
+func parseCopyseqOp(arg string) (opFunc, error) {
+	from, to, err := parsePair(arg)
+	if err != nil {
+		return nil, err
+	}
+	return func(p *project.Project) error { return p.CopySequence(from, to) }, nil
 }
 
 func main() {
